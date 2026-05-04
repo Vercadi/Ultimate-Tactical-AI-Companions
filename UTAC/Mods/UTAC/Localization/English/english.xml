@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<contentList xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<content contentuid="hd0b3e17bg3792g4ecagb3c6gfee3b5e46098" version="1">UTAC Control</content>
+<content contentuid="h36f1f7b0g63d6g4984gb334g4a7a5d1ab3af" version="1">Select an AI archetype to control your companion's combat behavior</content>
+<content contentuid="hdf560073g2a43g4e7ag811fg879668be75ac" version="1">UTAC Bruiser</content>
+<content contentuid="h4981e1cege87dg49e9g9116g8be3741fc2b1" version="1">Aggressive frontline fighter that rushes into melee combat</content>
+<content contentuid="h3ae8a2e3gc7d9g4c6eg9789g5af9ba43faab" version="1">UTAC Marksman</content>
+<content contentuid="h85f6a9d0g0771g4124g9527g92f8f10d044f" version="1">Keeps distance and focuses on ranged attacks</content>
+<content contentuid="hb12d14fcg5ce6g46c7gb699g2e19558be2a9" version="1">UTAC Protector</content>
+<content contentuid="hfc1561b2g7724g4047g835bg796d7ebd58de" version="1">Defensive fighter that protects allies and controls enemies</content>
+<content contentuid="h30964801g32e8g43e6gb26cgc32be18a575a" version="1">UTAC Healer</content>
+<content contentuid="h816b0f3bg355dg4e6ag9076gef6120f03962" version="1">Prioritizes healing and buffing allies over dealing damage</content>
+<content contentuid="h24fe9cf7gb7a8g4c04g8d3dg608169f0e829" version="1">UTAC Skirmisher</content>
+<content contentuid="hddc6c6bcge17eg4e6cg99b1ge3de458ec701" version="1">Mobile melee fighter that uses hit-and-run tactics</content>
+<content contentuid="hfb6e4293g9db8g4e3dg8411gbc845fdead79" version="1">UTAC Assassin</content>
+<content contentuid="h77bfffaag7bc8g4b69ga56dg0931be240a08" version="1">Opportunistic fighter that attacks vulnerable enemies with ranged, melee and spells</content>
+<content contentuid="hcfaf9354g7855g4f54gaf46g8fb53373c200" version="1">UTAC Balanced</content>
+<content contentuid="h10ed4d70ge404g4b2fg9e36g2fa67dfc49e6" version="1">Well-rounded AI that adapts to various situations</content>
+<content contentuid="h3bbc22c0gbd7ag4b5aga002ga1cec603b53d" version="1">UTAC AoE Specialist</content>
+<content contentuid="h9f0bb93cg49b3g4ed0ga5d6gda90aea333fa" version="1">Focuses on area damage and hitting multiple targets</content>
+<content contentuid="he99deafcg4c63g4b16g8dafg105df7ca817a" version="1">UTAC Spellcaster</content>
+<content contentuid="h770e7b41g6a4dg4746ga85dg1ebece6b2db5" version="1">Prioritizes spell casting and stays at safe distance</content>
+<content contentuid="h7fac1001g2b4ag4d1eg9d5aga1b2c3d4e5f6" version="1">UTAC Summon</content>
+<content contentuid="h7fac1002g3c5bg4e2fga06bgb2c3d4e5f607" version="1">Balanced AI profile for summoned allies and temporary followers</content>
+<content contentuid="h3c0ad479gf42bg4c0ega283g2643f8a0ee62" version="1">Rally AI Companions</content>
+<content contentuid="hc8e20db6g1a07g4217g85begefce58c93db9" version="1">Teleport all AI-controlled companions to your position</content>
+<content contentuid="h84b747cegac5f4b2dg6ef012f8g63bf8525" version="1">UTAC Danger Avoidance</content>
+<content contentuid="h765f82a9gfac9b2a5ge773a88aga5ba6231" version="1">This character will automatically avoid traps and dangerous surfaces</content>
+<content contentuid="h4c23761eg2dbc32a8g8bf754ddg71107d33" version="1">Trap Awareness</content>
+<content contentuid="h46942eceg3589e2c7g721e1e81gde9941a1" version="1">Actively avoiding traps and hazards</content>
+<content contentuid="haed1a792g6c80cfbeg1fb80f04gafd35d0c" version="1">Priority Target: Low HP</content>
+<content contentuid="h9a1c5a7eg224a682eg6c8a149fg970346ed" version="1">AI allies will prioritize this target</content>
+<content contentuid="h58a0cb43gf2d0108egbe7d244agb3838719" version="1">Priority Target: Concentrating</content>
+<content contentuid="h7c0dc85fg8e587ae8gcc87b9e8g1fb3f483" version="1">AI allies will prioritize breaking concentration</content>
+<content contentuid="h0ae9e539gcab8695dgc3deba3eg3e444224" version="1">Priority Target: Dangerous</content>
+<content contentuid="h2b63eb2bg954a3f14g67adad29g482b7884" version="1">AI allies will focus fire this enemy</content>
+<content contentuid="h67ab8a57ge336dca7gacae1513gf88dfd4d" version="1">Danger Zone</content>
+<content contentuid="ha0a94aceg1cc4f8f9g1c691ef9g43be2650" version="1">AI allies will avoid this area</content>
+<content contentuid="h0ca2776ag39b5f8bdgd59d1fe3ga8426b2c" version="1">UTAC DANGER ZONE LARGE</content>
+<content contentuid="h8a38912bgbca478eeg31956742g7a897801" version="1">Avoiding Danger</content>
+<content contentuid="h596dd955g980549adgc76fc3cag7bbf5dc8" version="1">Character is avoiding a dangerous area</content>
+<content contentuid="ha4e9b90egc05b907eg442d8adfgbe60554e" version="1">Escaping Danger</content>
+<content contentuid="h6f4364edgc424c63dg566fa520g5f4780c9" version="1">AI is prioritizing escape from dangerous surface</content>
+<content contentuid="hb9ba720bg35162089g6d7afcb6gc50cc03c" version="1">Bruiser's Fury</content>
+<content contentuid="he8bfedbfg6a7f7bb2gfdc34883g804d54c6" version="1">Damage increases as health decreases, gains temp HP on kill</content>
+<content contentuid="h844b416eg5a5953d3gbeb10b56gbd3f5b9d" version="1">Skirmisher's Momentum</content>
+<content contentuid="h94ae51a7gaa7a130dg59aac898gbe0de9f1" version="1">Gains movement after attacking, disengages freely</content>
+<content contentuid="h2164740fg19aa92cdgafdf799bg17167823" version="1">Mark the Weak</content>
+<content contentuid="ha56c1b4ag5ac37662g32e44572g0d5e646c" version="1">Marks vulnerable enemies, bonus damage to isolated targets</content>
+<content contentuid="h88106d8fga6d0db05g97110a51gcfe674ec" version="1">Isolation Hunter</content>
+<content contentuid="hc4b03dfeg44a128e7ge7a0b30fg6f84aa25" version="1">Deals extra damage to enemies with no allies nearby</content>
+<content contentuid="hf60a3b4agdc2224c5geb1e0f0fg75a0bafe" version="1">Marksman's Focus</content>
+<content contentuid="hf3565445g3aa762dbgb978df3dg9a77f48b" version="1">Increased range and accuracy, seeks high ground</content>
+<content contentuid="ha681e4d5g423c2e57g43a64a6bga5a03362" version="1">Tactical Retreat</content>
+<content contentuid="hfa69cf7cgb63ca565g89ccd0bbge685f265" version="1">Automatically maintains distance from enemies</content>
+<content contentuid="h4bee0642g67490dbbg7d8bbff4gba5db0a8" version="1">Healer's Grace</content>
+<content contentuid="hb563c33dgfaa55d79g1df434a5g760f54dd" version="1">Enhanced healing, provides aura to allies</content>
+<content contentuid="h6e4f1ad2g06223b73g2d79cc59g690d7af9" version="1">Guardian's Resolve</content>
+<content contentuid="h0bcdf27eg1fda1d65gcb9d5039gfc616969" version="1">Draws attacks, protects nearby allies</content>
+<content contentuid="hbb53e583gfcfcdce7g51cc6127g57785c3d" version="1">Area Devastation</content>
+<content contentuid="h8c3d8ccbg6fbda993g740d4df6g15f6b96d" version="1">Enhanced area damage, careful positioning</content>
+<content contentuid="h09443450g0ed4195dg48ebfffbg08c39709" version="1">Arcane Mastery</content>
+<content contentuid="h95dfd7e8g51d4eab1g396a9da6g3fd3c609" version="1">Spell slots regenerate, cantrips enhanced</content>
+<content contentuid="h50cae0acgb804a17aga673526eg9c970f91" version="1">Adaptive Tactics</content>
+<content contentuid="h5873b781g8b994cceg812b8012g199ceaa9" version="1">Versatile combatant that adapts to situations</content>
+<content contentuid="hb54e331bg9456d382gf5a78beeg13edc2f6" version="1">Spell Priority</content>
+<content contentuid="hcef93f9eg63f6dca0ga4ddaaa3ga2aa88d0" version="1">AI is encouraged to use spell slots</content>
+<content contentuid="h7a40ca87gd1af606fg19769945g994ed435" version="1">Ability Priority</content>
+<content contentuid="ha6cf3ef1g9126ea3ag0f73fc46gd77b17f9" version="1">AI is encouraged to use class abilities</content>
+<content contentuid="h5153c819g022ea896gb9727ba0gec0f9f02" version="1">Item Usage Priority</content>
+<content contentuid="h9520335fg29834048gd0e58c21g06c6a5ea" version="1">AI is encouraged to use consumables</content>
+<content contentuid="he6d200bcg966252fdg29235da3g5b3d916e" version="1">UTAC COMBAT CONTROL</content>
+<content contentuid="h9f8e7d6cg5c4bg4a3bg9b8ag7f6e5d4c3b2a" version="1">Release AI Control</content>
+<content contentuid="h1a2b3c4dge5f6g4a1bg8c9dga5b4c3d2e1f0" version="1">Removes AI control from the target, returning them to player control.</content>
+<content contentuid="ha1b2c3d4ge5f6g7a8bg9c0dge1f2a3b4c5d6" version="1">UTAC Orders</content>
+<content contentuid="hb2c3d4e5gf6a7g8b9cg0d1eg2f3a4b5c6d7e8" version="1">Issue global tactical orders to your AI companions. Focus or ignore specific targets.</content>
+<content contentuid="h1f2a3b4cg5d6eg7f8ag9b0cgd1e2f3a4b5c6" version="1">Focus Target</content>
+<content contentuid="h2a3b4c5dg6e7fg8a9bg0c1dge2f3a4b5c6d7" version="1">All UTAC-controlled allies will prioritize attacking this enemy.</content>
+<content contentuid="h3b4c5d6eg7f8ag9b0cg1d2eg3f4a5b6c7d8" version="1">Ignore Target</content>
+<content contentuid="h4c5d6e7fg8a9bg0c1dg2e3fg4a5b6c7d8e9" version="1">All UTAC-controlled allies will avoid targeting this enemy.</content>
+<content contentuid="h5a6b7c8dge9f0g1a2bg3c4dg5e6f7a8b9c0d1" version="1">NPC Mode</content>
+<content contentuid="h6b7c8d9eg0f1ag2b3cg4d5eg6f7a8b9c0d1e2" version="1">When active, this companion becomes an NPC ally in combat (green circle). Improves AI spell usage and self-targeting.</content>
+<content contentuid="hmcm7fac0005shadowname000000000005" version="1">Protect AI from Shadow Curse</content>
+<content contentuid="hmcm7fac0006shadowdesc000000000006" version="1">Optional hidden safety net for UTAC-controlled allies and summons in Act 2. Grants shadow-curse immunity so AI pathing cannot strand them outside safe light.</content>
+<content contentuid="hmcm7fac0001coredesc00000000000001" version="1">Master toggles. In co-op, only the host's MCM settings apply.</content>
+<content contentuid="hmcm7fac0002presetname00000000000002" version="1">Archetype preset</content>
+<content contentuid="hmcm7fac0003presetdesc00000000000003" version="1">0 = Default, 1 = Defensive Healer, 2 = Proactive Healer, 3 = Battle Cleric. Takes effect immediately when changed.</content>
+<content contentuid="hmcm7fac0004customresdesc000000000004" version="1">Comma- or semicolon-separated resource names for custom spell pools (e.g. from other mods).</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000001" version="1">UTAC</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000002" version="1">Core</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000003" version="1">Core Settings</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000004" version="1">Enable UTAC</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000005" version="1">Master toggle for the entire mod.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000006" version="1">Auto-Apply AI to Summons</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000007" version="1">Automatically apply UTAC Summon AI to friendly summons when they are created or enter combat.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000008" version="1">AI Assistance</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000009" version="1">Strong Archetype Assistance</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000000a" version="1">Enable archetype mechanical buffs</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000000b" version="1">Optional mechanical buffs themed by archetype. These are not required for AI control and are off by default.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000000c" version="1">Assistance Toggles</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000000d" version="1">Enable light combat assistance</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000000e" version="1">Allow short-lived, light combat assistance. This can grant real stats, so it is off by default.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000000f" version="1">Enable movement and safety assistance</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000010" version="1">Allow movement and surface-escape helpers. Trap awareness remains part of core AI control.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000011" version="1">Enable resource/action assistance</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000012" version="1">Allow UTAC to encourage spell slots, abilities, and consumables. Can grant limited action economy; off by default.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000013" version="1">Action Blocks</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000014" version="1">Block Dash for UTAC allies</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000015" version="1">When enabled, UTAC-controlled allies will avoid using Dash unless explicitly ordered.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000016" version="1">Block Throw actions for UTAC allies</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000017" version="1">Blocks common Throw, Improvised Weapon, and Frenzied Throw actions for UTAC-controlled allies in combat. Useful if NPC Mode causes unsafe thrown items, but does not cover every story or modded throw spell.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000018" version="1">Block Shove for UTAC allies</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000019" version="1">When enabled, UTAC-controlled allies will avoid using Shove. Off by default because this overrides the vanilla Shove spell for UTAC allies.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000001a" version="1">Soft Resource Tuning</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000001b" version="1">Prefer conserving high slots</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000001c" version="1">Soft behavior hint used by resource helpers. It only prevents UTAC from encouraging high-slot spending when pressure is low; it does not block spells.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000001d" version="1">Soft high slot level</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000001e" version="1">Spell slots at or above this level are treated as high-value by the soft resource-helper logic.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000001f" version="1">Soft spend pressure</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000020" version="1">Minimum nearby enemies before UTAC may encourage high-slot spending in non-urgent situations.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000021" version="1">Action Surge: HP% threshold</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000022" version="1">Bruiser companions will be encouraged to use Action Surge when HP drops below this percent.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000023" version="1">Emergency spell slot restoration chance (%)</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000024" version="1">Optional chance per turn that a caster archetype regains a level 1 spell slot under pressure. Default is 0 because this is real resource assistance.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000025" version="1">Additional Spell Resources</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000026" version="1">Healer</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000027" version="1">Healer AI Settings</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000028" version="1">HP% threshold for urgent triage</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000029" version="1">At or below this HP%, the healer prioritizes healing/revive and allies are counted as 'low HP' for AI decisions.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000002a" version="1">Debug</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000002b" version="1">Debug Settings</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000002c" version="1">Enable Debug Logging</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000002d" version="1">Show detailed AI decision logs in console.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000002e" version="1">Enable enhanced archetype buffs (experimental)</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000002f" version="1">Debug-tier mechanical assistance for Bruisers and Spellcasters. Very powerful and not part of normal AI control.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000030" version="1">AI Sculpt Spells Safety</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000031" version="1">Grants AI-controlled characters a hidden Sculpt Spells helper so many Evocation area spells avoid harming allies. Disabled by default because it changes combat balance and does not cover every spell.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000032" version="1">Use editable spell block list</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000033" version="1">Enables the editable blocked-spell list below. Add, remove, or disable spell IDs there to control which utility spells UTAC AI should avoid in combat.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000034" version="1">Edit blocked utility spell IDs</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000035" version="1">Typed spell IDs blocked for UTAC-controlled AI while spell policy is enabled. Only enabled rows are blocked; extra known utility candidates are included disabled by default.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000036" version="1">Block high spell slots in low-pressure combat</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000037" version="1">Hard limiter. Temporarily blocks higher normal spell slots for caster AI during low-pressure combat. Default off.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000038" version="1">Hard block from spell-slot level</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000039" version="1">Normal spell slots at this level and higher are blocked while the hard limiter is active.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000003a" version="1">Disable limiter when enemies nearby</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000003b" version="1">If this many enemies are nearby, high spell slots are allowed again. Set to 0 to always allow high slots during combat.</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000003c" version="1">Spells &amp; Resources</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000003d" version="1">Spell Policy</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000003e" version="1">Spell Slot Limiter</content>
+<content contentuid="h7fac0100g0000g4000g8000g00000000003f" version="1">Resource Helpers</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000040" version="1">Summon auto-apply exclusions</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000041" version="1">Advanced: editable root/template UUID list for summons UTAC should not auto-control. Use this for utility summons such as Pack Rats. Runtime spawned character UUIDs usually change and should not be used. Manual archetype assignment still works.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000042" version="1">Block Jump for UTAC allies</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000043" version="1">Blocks normal AI Jump for UTAC-controlled allies in combat. Useful if companions make unsafe vertical jumps, but may reduce mobility or pathing options.</content>
+</contentList>

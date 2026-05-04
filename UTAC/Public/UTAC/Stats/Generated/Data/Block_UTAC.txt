@@ -1,0 +1,42 @@
+new entry "Shout_Dash"
+type "SpellData"
+using "Shout_Dash"
+data "RequirementConditions" "not HasStatus('UTAC_ALLY') or not HasStatus('UTAC_DASHING_DISABLED')"
+
+new entry "Shout_Dash_BonusAction"
+type "SpellData"
+using "Shout_Dash_BonusAction"
+data "RequirementConditions" "not HasStatus('UTAC_ALLY') or not HasStatus('UTAC_DASHING_DISABLED')"
+
+new entry "Throw_Throw"
+type "SpellData"
+using "Throw_Throw"
+data "RequirementConditions" "not HasStatus('UTAC_ALLY') or not HasStatus('UTAC_THROWING_DISABLED')"
+
+new entry "Throw_ImprovisedWeapon"
+type "SpellData"
+using "Throw_ImprovisedWeapon"
+data "RequirementConditions" "not HasStatus('UTAC_ALLY') or not HasStatus('UTAC_THROWING_DISABLED')"
+
+new entry "Throw_FrenziedThrow"
+type "SpellData"
+using "Throw_FrenziedThrow"
+data "RequirementConditions" "not HasStatus('UTAC_ALLY') or not HasStatus('UTAC_THROWING_DISABLED')"
+
+// Optional UTAC jump block (AI can make unsafe vertical jumps)
+new entry "Projectile_Jump"
+type "SpellData"
+using "Projectile_Jump"
+data "RequirementConditions" "not HasStatus('UTAC_ALLY') or not HasStatus('UTAC_JUMPING_DISABLED')"
+
+// Optional UTAC shove block (AI can waste actions shoving dead bodies)
+new entry "Target_Shove"
+type "SpellData"
+using "Target_Shove"
+data "RequirementConditions" "not HasStatus('UTAC_ALLY') or not HasStatus('UTAC_SHOVING_DISABLED')"
+
+// Rally: only usable out of combat (stops companions/AI from using it in combat)
+new entry "Shout_UTAC_Rally"
+type "SpellData"
+using "Shout_UTAC_Rally"
+data "RequirementConditions" "not Combat()"

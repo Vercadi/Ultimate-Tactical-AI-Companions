@@ -1,0 +1,63 @@
+﻿USING base
+
+// Guardian defender prioritising buffs and protection over offense
+MULTIPLIER_DAMAGE_ENEMY_POS                  0.4
+MULTIPLIER_KILL_ENEMY                        0.25
+MULTIPLIER_CONTROL_ENEMY_POS                 2.0
+MULTIPLIER_CONTROL_ALLY_NEG                  20.0
+MULTIPLIER_DAMAGE_ALLY_NEG                   18.0
+MULTIPLIER_DAMAGE_ALLY_POS                   0.05
+
+// Defensive positioning around allies
+MULTIPLIER_ENDPOS_ENEMIES_NEARBY             4.0
+MULTIPLIER_ENDPOS_ALLIES_NEARBY              3.5
+MULTIPLIER_FALLBACK_ENEMIES_NEARBY           0.0
+MULTIPLIER_CONTACT_BOOST                     4.0
+MULTIPLIER_ENDPOS_NOT_IN_DANGEROUS_SURFACE   0.9
+
+// Target selection biases – focus on shielding allies
+MULTIPLIER_TARGET_MY_ENEMY                   1.2
+MULTIPLIER_TARGET_PREFERRED                  4.0
+MULTIPLIER_TARGET_UNPREFERRED                0.1
+MULTIPLIER_TARGET_HOSTILE_COUNT_ONE          1.5
+MULTIPLIER_TARGET_HOSTILE_COUNT_TWO_OR_MORE  1.25
+
+// Defensive abilities – buff, heal, and protect
+MULTIPLIER_FIRST_ACTION_BUFF                 3.0
+MULTIPLIER_BOOST_SELF_POS                    2.2
+MULTIPLIER_BOOST_ALLY_POS                    2.6
+MULTIPLIER_BOOST_ACTION_RESOURCE             0.8
+MULTIPLIER_RESURRECT                         20.0
+MULTIPLIER_TARGET_ALLY_DOWNED                18.0
+MULTIPLIER_HEAL_ALLY_POS                     2.0
+MULTIPLIER_HEAL_SELF_POS                     1.0
+MAX_HEAL_MULTIPLIER                          1.0
+MAX_HEAL_SELF_MULTIPLIER                     1.0
+MULTIPLIER_HEAL_SELF_NEG                     2.0
+MULTIPLIER_HEAL_ALLY_NEG                     2.0
+MULTIPLIER_HEAL_NEUTRAL_NEG                  2.0
+MULTIPLIER_HEAL_ENEMY_NEG                    2.0
+
+BOOST_IGNORE_AOO_MIN_MOVEMENT                3.0
+MULTIPLIER_BOOST_IGNORE_AOO                 -0.05
+MULTIPLIER_POS_IN_AURA                       0.5
+
+WEAPON_PICKUP_MODIFIER                       1.0
+MODIFIER_CONCENTRATION_REMOVE_SELF           2.0
+MODIFIER_SEEK_MINIMAL_THRESHOLD              0.4
+
+MULTIPLIER_REFLECT_DAMAGE                    0.25
+MULTIPLIER_TARGET_INCAPACITATED              0.25
+MULTIPLIER_INCAPACITATE                      1.0
+MULTIPLIER_USABLE_ITEM                       0.5
+USE_ITEM_MODIFIER                            0.5
+ENABLE_MOVEMENT_AVOID_AOO                    0.7
+
+// Discourage shoving (AI wastes actions shoving dead bodies)
+MULTIPLIER_SHOVE_ENEMY_POS                   0.0
+
+// --- SMART AI ENHANCEMENTS ---
+MODIFIER_HIT_CHANCE_STUPIDITY                0.0
+MODIFIER_CONCENTRATION_REMOVE_TARGET         0.4
+MULTIPLIER_FALL_DAMAGE_ENEMY                 0.2
+

@@ -1,0 +1,436 @@
+{
+  "SchemaVersion": 1,
+  "ModName": "UTAC",
+  "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000001" },
+  "Tabs": [
+    {
+      "TabId": "coreTab",
+      "TabName": "Core",
+      "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000002" },
+      "Sections": [
+        {
+          "SectionId": "coreSettings",
+          "SectionName": "Core Settings",
+          "SectionDescription": "Master toggles. In co-op, only the host's MCM settings apply.",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000003", "DescriptionHandle": "hmcm7fac0001coredesc00000000000001" },
+          "Settings": [
+            {
+              "Id": "MCM_EnableMod",
+              "Name": "Enable UTAC",
+              "Type": "checkbox",
+              "Default": true,
+              "Description": "Master toggle for the entire mod.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000004", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000005" }
+            },
+            {
+              "Id": "MCM_AutoApplySummons",
+              "Name": "Auto-Apply AI to Summons",
+              "Type": "checkbox",
+              "Default": true,
+              "Description": "Automatically apply UTAC Summon AI to friendly summons when they are created or enter combat.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000006", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000007" }
+            },
+            {
+              "Id": "MCM_AutoSummonExclusionList",
+              "Name": "Summon auto-apply exclusions",
+              "Type": "list_v2",
+              "Default": {
+                "enabled": true,
+                "elements": [
+                  { "name": "242bfc84-42ad-4719-8b34-ff854332317d", "enabled": true },
+                  { "name": "c04db4ef-3902-4ffb-9b84-e0f443b12bb3", "enabled": true },
+                  { "name": "99c92762-14b2-4660-9781-6a365f8ccebd", "enabled": true },
+                  { "name": "0d6d85ce-c985-4a1f-be91-a2aaba8e3c57", "enabled": true },
+                  { "name": "6d730ba9-0573-4351-8227-f077c0181082", "enabled": true },
+                  { "name": "b99d4d1f-c68f-4ed7-8962-7cb2d288a89b", "enabled": true },
+                  { "name": "1a8fe2e9-518c-4e64-bfef-54b1ebb5d242", "enabled": true },
+                  { "name": "58712c7a-84fa-46a7-beaf-d7e8c480203d", "enabled": true }
+                ]
+              },
+              "Options": {
+                "AllowReordering": true,
+                "ShowSearchBar": true
+              },
+              "Description": "Advanced: editable root/template UUID list for summons UTAC should not auto-control. Use this for utility summons such as Pack Rats. Runtime spawned character UUIDs usually change and should not be used. Manual archetype assignment still works.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000040", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000041" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "TabId": "aiHelpersTab",
+      "TabName": "AI Assistance",
+      "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000008" },
+      "Sections": [
+        {
+          "SectionId": "archetypeBuffs",
+          "SectionName": "Strong Archetype Assistance",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000009" },
+          "Settings": [
+            {
+              "Id": "MCM_EnableArchetypeBuffs",
+              "Name": "Enable archetype mechanical buffs",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Optional mechanical buffs themed by archetype. These are not required for AI control and are off by default.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000000a", "DescriptionHandle": "h7fac0100g0000g4000g8000g00000000000b" }
+            }
+          ]
+        },
+        {
+          "SectionId": "helperToggles",
+          "SectionName": "Assistance Toggles",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000000c" },
+          "Settings": [
+            {
+              "Id": "MCM_EnableBuffHelpers",
+              "Name": "Enable light combat assistance",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Allow short-lived, light combat assistance. This can grant real stats, so it is off by default.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000000d", "DescriptionHandle": "h7fac0100g0000g4000g8000g00000000000e" }
+            },
+            {
+              "Id": "MCM_EnableMovementHelpers",
+              "Name": "Enable movement and safety assistance",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Allow movement and surface-escape helpers. Trap awareness remains part of core AI control.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000000f", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000010" }
+            },
+            {
+              "Id": "MCM_EnableShadowCurseProtection",
+              "Name": "Protect AI from Shadow Curse",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Optional hidden safety net for UTAC-controlled allies and summons in Act 2. Grants shadow-curse immunity so AI pathing cannot strand them outside safe light.",
+              "Handles": { "NameHandle": "hmcm7fac0005shadowname000000000005", "DescriptionHandle": "hmcm7fac0006shadowdesc000000000006" }
+            },
+            {
+              "Id": "MCM_EnableSculptSpellsHelper",
+              "Name": "AI Sculpt Spells Safety",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Grants AI-controlled characters a hidden Sculpt Spells helper so many Evocation area spells avoid harming allies. Disabled by default because it changes combat balance and does not cover every spell.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000030", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000031" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "TabId": "spellsResourcesTab",
+      "TabName": "Spells & Resources",
+      "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000003c" },
+      "Sections": [
+        {
+          "SectionId": "actionBlocks",
+          "SectionName": "Action Blocks",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000013" },
+          "Settings": [
+            {
+              "Id": "MCM_DisableUTACDash",
+              "Name": "Block Dash for UTAC allies",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "When enabled, UTAC-controlled allies will avoid using Dash unless explicitly ordered.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000014", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000015" }
+            },
+            {
+              "Id": "MCM_DisableUTACThrow",
+              "Name": "Block Throw actions for UTAC allies",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Blocks common Throw, Improvised Weapon, and Frenzied Throw actions for UTAC-controlled allies in combat. Useful if NPC Mode causes unsafe thrown items, but does not cover every story or modded throw spell.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000016", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000017" }
+            },
+            {
+              "Id": "MCM_DisableUTACJump",
+              "Name": "Block Jump for UTAC allies",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Blocks normal AI Jump for UTAC-controlled allies in combat. Useful if companions make unsafe vertical jumps, but may reduce mobility or pathing options.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000042", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000043" }
+            },
+            {
+              "Id": "MCM_DisableUTACShove",
+              "Name": "Block Shove for UTAC allies",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "When enabled, UTAC-controlled allies will avoid using Shove. Off by default because this overrides the vanilla Shove spell for UTAC allies.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000018", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000019" }
+            }
+          ]
+        },
+        {
+          "SectionId": "spellBlocking",
+          "SectionName": "Spell Policy",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000003d" },
+          "Settings": [
+            {
+              "Id": "MCM_EnableUTACSpellPolicy",
+              "Name": "Use editable spell block list",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Enables the editable blocked-spell list below. Add, remove, or disable spell IDs there to control which utility spells UTAC AI should avoid in combat.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000032", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000033" }
+            },
+            {
+              "Id": "MCM_UTACBlockedSpellList",
+              "Name": "Edit blocked utility spell IDs",
+              "Type": "list_v2",
+              "Default": {
+                "enabled": true,
+                "elements": [
+                  { "name": "Shout_FeatherFall", "enabled": true },
+                  { "name": "Target_FogCloud", "enabled": true },
+                  { "name": "Target_BlessingOfTheTrickster", "enabled": true },
+                  { "name": "Target_Sanctuary", "enabled": false },
+                  { "name": "Target_WardingBond", "enabled": false },
+                  { "name": "Target_Longstrider", "enabled": false },
+                  { "name": "Target_Guidance", "enabled": false },
+                  { "name": "Target_GaseousForm", "enabled": false },
+                  { "name": "Target_Invisibility", "enabled": false }
+                ]
+              },
+              "Options": {
+                "AllowReordering": true,
+                "PageSize": 8,
+                "ReadOnly": false,
+                "ShowSearchBar": true
+              },
+              "Description": "Typed spell IDs blocked for UTAC-controlled AI while spell policy is enabled. Only enabled rows are blocked; extra known utility candidates are included disabled by default.",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "MCM_EnableUTACSpellPolicy", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000034", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000035" }
+            }
+          ]
+        },
+        {
+          "SectionId": "resourceSettings",
+          "SectionName": "Soft Resource Tuning",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000001a" },
+          "Settings": [
+            {
+              "Id": "ConserveHighSlots",
+              "Name": "Prefer conserving high slots",
+              "Type": "checkbox",
+              "Default": true,
+              "Description": "Soft behavior hint used by resource helpers. It only prevents UTAC from encouraging high-slot spending when pressure is low; it does not block spells.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000001b", "DescriptionHandle": "h7fac0100g0000g4000g8000g00000000001c" }
+            },
+            {
+              "Id": "ConserveHighSlots_MinLevel",
+              "Name": "Soft high slot level",
+              "Type": "slider_int",
+              "Default": 3,
+              "Options": {
+                "Min": 2,
+                "Max": 6,
+                "Step": 1
+              },
+              "Description": "Spell slots at or above this level are treated as high-value by the soft resource-helper logic.",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "ConserveHighSlots", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000001d", "DescriptionHandle": "h7fac0100g0000g4000g8000g00000000001e" }
+            },
+            {
+              "Id": "ConserveHighSlots_AllowEnemiesAtLeast",
+              "Name": "Soft spend pressure",
+              "Type": "slider_int",
+              "Default": 3,
+              "Options": {
+                "Min": 0,
+                "Max": 6,
+                "Step": 1
+              },
+              "Description": "Minimum nearby enemies before UTAC may encourage high-slot spending in non-urgent situations.",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "ConserveHighSlots", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000001f", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000020" }
+            }
+          ]
+        },
+        {
+          "SectionId": "spellSlotLimiter",
+          "SectionName": "Spell Slot Limiter",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000003e" },
+          "Settings": [
+            {
+              "Id": "MCM_EnableSpellSlotLimiter",
+              "Name": "Block high spell slots in low-pressure combat",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Hard limiter. Temporarily blocks higher normal spell slots for caster AI during low-pressure combat. Default off.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000036", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000037" }
+            },
+            {
+              "Id": "MCM_SpellSlotLimiter_MinLevel",
+              "Name": "Hard block from spell-slot level",
+              "Type": "slider_int",
+              "Default": 3,
+              "Options": {
+                "Min": 2,
+                "Max": 6,
+                "Step": 1
+              },
+              "Description": "Normal spell slots at this level and higher are blocked while the hard limiter is active.",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "MCM_EnableSpellSlotLimiter", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000038", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000039" }
+            },
+            {
+              "Id": "MCM_SpellSlotLimiter_AllowEnemiesAtLeast",
+              "Name": "Disable limiter when enemies nearby",
+              "Type": "slider_int",
+              "Default": 3,
+              "Options": {
+                "Min": 0,
+                "Max": 6,
+                "Step": 1
+              },
+              "Description": "If this many enemies are nearby, high spell slots are allowed again. Set to 0 to always allow high slots during combat.",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "MCM_EnableSpellSlotLimiter", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000003a", "DescriptionHandle": "h7fac0100g0000g4000g8000g00000000003b" }
+            }
+          ]
+        },
+        {
+          "SectionId": "resourceHelpers",
+          "SectionName": "Resource Helpers",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000003f" },
+          "Settings": [
+            {
+              "Id": "MCM_EnableResourceHelpers",
+              "Name": "Enable resource/action assistance",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Allow UTAC to encourage spell slots, abilities, and consumables. Can grant limited action economy; off by default.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000011", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000012" }
+            },
+            {
+              "Id": "MCM_ActionSurgeThreshold",
+              "Name": "Action Surge: HP% threshold",
+              "Type": "slider_int",
+              "Default": 50,
+              "Options": { "Min": 10, "Max": 100, "Step": 5 },
+              "Description": "Bruiser companions will be encouraged to use Action Surge when HP drops below this percent.",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "MCM_EnableResourceHelpers", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000021", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000022" }
+            },
+            {
+              "Id": "MCM_SpellSlotRestorationChance",
+              "Name": "Emergency spell slot restoration chance (%)",
+              "Type": "slider_int",
+              "Default": 0,
+              "Options": { "Min": 0, "Max": 100, "Step": 5 },
+              "Description": "Optional chance per turn that a caster archetype regains a level 1 spell slot under pressure. Default is 0 because this is real resource assistance.",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "MCM_EnableResourceHelpers", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000023", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000024" }
+            },
+            {
+              "Id": "MCM_CustomSpellResources",
+              "Name": "Additional Spell Resources",
+              "Type": "text",
+              "Default": "",
+              "Description": "Comma- or semicolon-separated resource names for custom spell pools (e.g. from other mods).",
+              "VisibleIf": {
+                "Conditions": [
+                  { "SettingId": "MCM_EnableResourceHelpers", "Operator": "==", "ExpectedValue": true }
+                ]
+              },
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000025", "DescriptionHandle": "hmcm7fac0004customresdesc000000000004" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "TabId": "healerTab",
+      "TabName": "Healer",
+      "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000026" },
+      "Sections": [
+        {
+          "SectionId": "healerSettings",
+          "SectionName": "Healer AI Settings",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000027" },
+          "Settings": [
+            {
+              "Id": "Healer_TriageThreshold",
+              "Name": "HP% threshold for urgent triage",
+              "Type": "slider_int",
+              "Default": 60,
+              "Options": { "Min": 10, "Max": 100, "Step": 5 },
+              "Description": "At or below this HP%, the healer prioritizes healing/revive and allies are counted as 'low HP' for AI decisions.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000028", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000029" }
+            },
+            {
+              "Id": "ArchetypePresetIndex",
+              "Name": "Archetype preset",
+              "Type": "slider_int",
+              "Default": 0,
+              "Options": { "Min": 0, "Max": 3, "Step": 1 },
+              "Description": "0 = Default, 1 = Defensive Healer, 2 = Proactive Healer, 3 = Battle Cleric. Takes effect immediately when changed.",
+              "Handles": { "NameHandle": "hmcm7fac0002presetname00000000000002", "DescriptionHandle": "hmcm7fac0003presetdesc00000000000003" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "TabId": "debugTab",
+      "TabName": "Debug",
+      "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000002a" },
+      "Sections": [
+        {
+          "SectionId": "debugSettings",
+          "SectionName": "Debug Settings",
+          "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000002b" },
+          "Settings": [
+            {
+              "Id": "MCM_DebugLogging",
+              "Name": "Enable Debug Logging",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Show detailed AI decision logs in console.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000002c", "DescriptionHandle": "h7fac0100g0000g4000g8000g00000000002d" }
+            },
+            {
+              "Id": "MCM_EnableEnhancedBuffs",
+              "Name": "Enable enhanced archetype buffs (experimental)",
+              "Type": "checkbox",
+              "Default": false,
+              "Description": "Debug-tier mechanical assistance for Bruisers and Spellcasters. Very powerful and not part of normal AI control.",
+              "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g00000000002e", "DescriptionHandle": "h7fac0100g0000g4000g8000g00000000002f" }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

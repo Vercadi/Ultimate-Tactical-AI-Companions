@@ -1,0 +1,58 @@
+# OS / explorer noise
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE state
+.vscode/
+.vs/
+*.code-workspace
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Temp / patch residue
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+
+# Logs / local diagnostics
+*.log
+logs/
+Logs/
+tmp/
+temp/
+Temp/
+
+# Tool caches
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Local build / packaging outputs
+build/
+Build/
+dist/
+Dist/
+release/
+Release/
+packages/
+Packages/
+package/
+Package/
+export/
+Export/
+Packed/
+*.pak
+*.zip
+*.7z
+*.rar
+
+# Keep BG3 source assets under Public/.../Generated/Data tracked.

@@ -1,0 +1,22 @@
+// Legacy candidate: direct Lua application of AI_TRAP_AWARENESS is currently the live path.
+// Retained until in-game trap exploration testing proves whether this passive adds value.
+new entry "UTAC_DANGER_SENSE"
+type "PassiveData"
+data "DisplayName" "AI Danger Sense"
+data "Description" "Enhanced awareness of environmental hazards"
+data "Properties" "IsHidden"
+data "StatsFunctorContext" "OnTurn"
+data "Conditions" "not Combat()"
+data "StatsFunctors" "IF(HasStatus('UTAC_AVOID_DANGER',context.Source)):ApplyStatus(SELF,AI_TRAP_AWARENESS,100,1)"
+
+new entry "UTAC_ToggleNPC"
+type "PassiveData"
+data "DisplayName" "h5a6b7c8dge9f0g1a2bg3c4dg5e6f7a8b9c0d1"
+data "Description" "h6b7c8d9eg0f1ag2b3cg4d5eg6f7a8b9c0d1e2"
+data "Icon" "Spell_Illusion_DisguiseSelf"
+data "Properties" "IsToggled;ToggledDefaultAddToHotbar;Highlighted"
+data "ToggleOnFunctors" "ApplyStatus(UTAC_TOGGLE_IS_NPC,100,-1);ApplyStatus(UTAC_REAPPLY_NPC_NEEDED,100,-1)"
+data "ToggleOffFunctors" "RemoveStatus(UTAC_TOGGLE_IS_NPC);RemoveStatus(UTAC_REAPPLY_NPC_NEEDED)"
+data "StatsFunctorContext" "OnDamaged;OnStatusApplied"
+data "Conditions" "not HasStatus('UTAC_REAPPLY_NPC') and (HasHPPercentageEqualOrLessThan(0) or IsKillingBlow()) and HasStatus('UTAC_REAPPLY_NPC_NEEDED')"
+data "StatsFunctors" "ApplyStatus(UTAC_REAPPLY_NPC,100,-1)"

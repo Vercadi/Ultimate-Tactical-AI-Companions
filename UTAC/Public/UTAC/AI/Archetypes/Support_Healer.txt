@@ -1,0 +1,60 @@
+﻿USING base
+
+// Support-focused healer tuned against ally aggression
+MULTIPLIER_BOOST_ALLY_POS                    1.25
+MULTIPLIER_BOOST_SELF_POS                    1.15
+MULTIPLIER_BOOST_NEUTRAL_POS                 1.05
+MULTIPLIER_HEAL_ALLY_POS                     1.15
+MULTIPLIER_HEAL_SELF_POS                     1.05
+MAX_HEAL_MULTIPLIER                          0.70
+MAX_HEAL_SELF_MULTIPLIER                     0.65
+
+// Keep offense available when no urgent healing target exists
+MULTIPLIER_DAMAGE_ENEMY_POS                  0.9
+MULTIPLIER_KILL_ENEMY                        0.25
+MULTIPLIER_CONTROL_ENEMY_POS                 0.45
+MULTIPLIER_CONTROL_NEUTRAL_POS               0.0
+MULTIPLIER_CONTROL_NEUTRAL_NEG               6.0
+MULTIPLIER_TARGET_MY_ENEMY                   0.4
+MULTIPLIER_TARGET_PREFERRED                  1.0
+MULTIPLIER_TARGET_UNPREFERRED                0.05
+MULTIPLIER_RESURRECT                         15.0
+MULTIPLIER_TARGET_ALLY_DOWNED                10.0
+MULTIPLIER_TARGET_HEALTH_BIAS                0.45
+
+// Strong penalties for harming allies or neutral targets
+MULTIPLIER_DAMAGE_ALLY_NEG                   20.0
+MULTIPLIER_DAMAGE_ALLY_POS                   0.01
+MULTIPLIER_CONTROL_ALLY_NEG                  18.0
+MULTIPLIER_DOT_ALLY_NEG                      10.0
+MULTIPLIER_HOT_ALLY_NEG                      2.0
+MULTIPLIER_HEAL_ENEMY_NEG                    3.0
+MULTIPLIER_HEAL_ALLY_NEG                     0.0
+MULTIPLIER_HEAL_SELF_NEG                     2.5
+MULTIPLIER_HEAL_NEUTRAL_NEG                  2.5
+
+// Positioning & survivability
+BOOST_IGNORE_AOO_MIN_MOVEMENT                3.0
+MULTIPLIER_BOOST_IGNORE_AOO                 -0.05
+MULTIPLIER_ENDPOS_ALLIES_NEARBY              0.5
+MULTIPLIER_ENDPOS_NOT_IN_DANGEROUS_SURFACE   0.8
+MULTIPLIER_FALLBACK_ENEMIES_NEARBY          -0.5
+
+// Encourage support actions over item spam
+USE_ITEM_MODIFIER                            0.05
+MULTIPLIER_USABLE_ITEM                       0.2
+
+MULTIPLIER_FIRST_ACTION_BUFF                 0.25
+
+WEAPON_PICKUP_MODIFIER                       0.2
+MODIFIER_CONCENTRATION_REMOVE_SELF           2.0
+MODIFIER_SEEK_MINIMAL_THRESHOLD              0.45
+
+// Discourage shoving (AI wastes actions shoving dead bodies)
+MULTIPLIER_SHOVE_ENEMY_POS                   0.0
+
+// --- SMART AI ENHANCEMENTS ---
+MODIFIER_HIT_CHANCE_STUPIDITY                0.0
+MODIFIER_CONCENTRATION_REMOVE_TARGET         0.0
+MULTIPLIER_FALL_DAMAGE_ENEMY                 0.0
+
