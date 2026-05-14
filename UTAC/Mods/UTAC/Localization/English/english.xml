@@ -136,7 +136,7 @@
 <content contentuid="h7fac0100g0000g4000g8000g000000000030" version="1">AI Sculpt Spells Safety</content>
 <content contentuid="h7fac0100g0000g4000g8000g000000000031" version="1">Grants AI-controlled characters a hidden Sculpt Spells helper so many Evocation area spells avoid harming allies. Disabled by default because it changes combat balance and does not cover every spell.</content>
 <content contentuid="h7fac0100g0000g4000g8000g000000000032" version="1">Use editable spell block list</content>
-<content contentuid="h7fac0100g0000g4000g8000g000000000033" version="1">Enables the editable blocked-spell list below. Add, remove, or disable spell IDs there to control which utility spells UTAC AI should avoid in combat.</content>
+<content contentuid="h7fac0100g0000g4000g8000g000000000033" version="1">Enables the editable blocked-spell list below. Add, remove, or disable spell IDs there to control which utility spells UTAC AI is blocked from using in combat.</content>
 <content contentuid="h7fac0100g0000g4000g8000g000000000034" version="1">Edit blocked utility spell IDs</content>
 <content contentuid="h7fac0100g0000g4000g8000g000000000035" version="1">Typed spell IDs blocked for UTAC-controlled AI while spell policy is enabled. Only enabled rows are blocked; extra known utility candidates are included disabled by default.</content>
 <content contentuid="h7fac0100g0000g4000g8000g000000000036" version="1">Block high spell slots in low-pressure combat</content>

@@ -267,7 +267,7 @@ local function NormalizePresetIndex(value, fallback)
     return NormalizeNumber(value, fallback, NUMBER_RULES.ArchetypePresetIndex)
 end
 
-local function NormalizeListV2(value, fallback)
+local function NormalizeListV2(value, fallback, settingId)
     local source = value
     if source == nil then
         source = fallback
@@ -288,6 +288,16 @@ local function NormalizeListV2(value, fallback)
         return out
     end
 
+    if type(source) ~= "table" then
+        return out
+    end
+
+    if type(source.settings) == "table" and settingId ~= nil and source.settings[settingId] ~= nil then
+        source = source.settings[settingId]
+    end
+    if type(source.Default) == "table" then
+        source = source.Default
+    end
     if type(source) ~= "table" then
         return out
     end
@@ -318,8 +328,44 @@ local function NormalizeListV2(value, fallback)
     return out
 end
 
-local function GetEnabledListEntries(value, fallback)
-    local normalized = NormalizeListV2(value, fallback)
+local function IsListV2Setting(settingId)
+    return settingId == "MCM_UTACBlockedSpellList" or settingId == "MCM_AutoSummonExclusionList"
+end
+
+local function HasListV2Payload(value, settingId)
+    if type(value) ~= "table" then
+        return false
+    end
+    if value[1] ~= nil then
+        return true
+    end
+    if value.elements ~= nil or value.list ~= nil or value.values ~= nil or value.value ~= nil then
+        return true
+    end
+    if type(value.Default) == "table" then
+        return HasListV2Payload(value.Default, settingId)
+    end
+    if type(value.settings) == "table" and settingId ~= nil and value.settings[settingId] ~= nil then
+        return HasListV2Payload(value.settings[settingId], settingId)
+    end
+    return false
+end
+
+local function GetMCMAPI()
+    if not Mods then
+        return nil
+    end
+    if Mods.BG3MCM and Mods.BG3MCM.MCMAPI and type(Mods.BG3MCM.MCMAPI.GetSettingValue) == "function" then
+        return Mods.BG3MCM.MCMAPI
+    end
+    if Mods.UTAC and Mods.UTAC.MCMAPI and type(Mods.UTAC.MCMAPI.GetSettingValue) == "function" then
+        return Mods.UTAC.MCMAPI
+    end
+    return nil
+end
+
+local function GetEnabledListEntries(value, fallback, settingId)
+    local normalized = NormalizeListV2(value, fallback, settingId)
     local out = {}
     if normalized.enabled == false then
         return out
@@ -337,7 +383,7 @@ local function NormalizeValue(settingId, value, fallback)
         return NormalizePresetIndex(value, fallback)
     end
     if settingId == "MCM_UTACBlockedSpellList" or settingId == "MCM_AutoSummonExclusionList" then
-        return NormalizeListV2(value, fallback)
+        return NormalizeListV2(value, fallback, settingId)
     end
     if BOOLEAN_IDS[settingId] == true then
         return NormalizeBoolean(value, fallback)
@@ -360,11 +406,28 @@ end
 Settings.NormalizeValue = NormalizeValue
 
 local function ReadMCM(settingId)
+    local mcmApi = GetMCMAPI()
+    if mcmApi then
+        local ok, value = pcall(function()
+            return mcmApi:GetSettingValue(settingId, UTAC_MOD_UUID)
+        end)
+        if ok and value ~= nil and (not IsListV2Setting(settingId) or HasListV2Payload(value, settingId)) then
+            return value, true
+        end
+    end
+
     if not (MCM and type(MCM.Get) == "function") then
         return nil, false
     end
 
     local ok, value = pcall(function()
+        return MCM.Get(settingId, UTAC_MOD_UUID)
+    end)
+    if ok and value ~= nil then
+        return value, true
+    end
+
+    ok, value = pcall(function()
         return MCM.Get(settingId)
     end)
     if not ok then
@@ -462,7 +525,7 @@ function Settings.GetList(settingId, default)
     if fallback == nil then
         fallback = DEFAULTS[settingId]
     end
-    return GetEnabledListEntries(Settings.Get(settingId), fallback)
+    return GetEnabledListEntries(Settings.Get(settingId), fallback, settingId)
 end
 
 local function IsUuidToken(value)
@@ -623,7 +686,9 @@ function Settings.RefreshFromMCM(options)
 
     Settings.SubscribeMCMEvents()
 
-    if not (MCM and type(MCM.Get) == "function") then
+    local hasMCMGet = MCM and type(MCM.Get) == "function"
+    local hasMCMAPI = GetMCMAPI() ~= nil
+    if not (hasMCMGet or hasMCMAPI) then
         SettingsLog(string.format("BG3MCM unavailable during %s; keeping current runtime snapshot.", tostring(options and options.source or "refresh")))
         return false
     end

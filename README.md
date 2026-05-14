@@ -16,7 +16,7 @@ BG3MCM is a hard dependency. UTAC uses it for the supported settings UI and host
 
 - Nine tactical AI archetypes: Bruiser, Skirmisher, Assassin, Marksman, Protector, Healer, AoE Specialist, Spellcaster, and General AI.
 - Companion AI control and release spells.
-- Optional NPC Mode toggle for AI-controlled allies.
+- Optional NPC-mode toggle for AI-controlled allies.
 - Manual Focus Target and Ignore Target orders.
 - Trap and dangerous-surface awareness for exploration safety.
 - Optional MCM-gated helper tiers for movement, resource encouragement, archetype buffs, and debug-tier enhanced buffs.
@@ -48,7 +48,7 @@ Nexus page: https://www.nexusmods.com/baldursgate3/mods/22558
 - AoE Specialist can expose unsafe or incomplete AI metadata in modded AoE spell packs. Use Spellcaster or General AI if a modded AoE caster skips turns or crashes.
 - Native AI pathing can still misread environmental hazards that are not represented as dangerous surfaces.
 - Sculpt Spells safety only affects spells that respect BG3's `SculptSpells` passive behavior. It does not protect against every AoE, surface, aura, or modded spell.
-- Spell policy and spell-slot limiter are optional and default off. Spell blocking reduces native AI selection but cannot stop every scripted `UseSpell`; the first slot limiter pass blocks normal `SpellSlot` only, not warlock or custom resources.
+- Spell policy and spell-slot limiter are optional and default off. Spell blocking uses turn-scoped AI selection blocking for UTAC-controlled actors; prepared/class spells may still appear in the spellbook or hotbar because BG3 owns that UI. The first slot limiter pass blocks normal `SpellSlot` only, not warlock or custom resources.
 - Action blocks are optional and default off. Throw blocking covers common Throw, Improvised Weapon, and Frenzied Throw actions, not every story/modded throw variant.
 - Summon automation supports vanilla summons and common temporary party-follower summon patterns. Utility summons can be excluded by root/template UUID in MCM.
 
@@ -67,6 +67,7 @@ Please include:
 
 - `UTAC/` - BG3 mod source folder.
 - `CHANGELOG.md` - public release changelog.
+- `ROADMAP.md` - public roadmap and planned work.
 - `TRANSLATORS.md` - notes for translation patch authors.
 
 Package archives, build outputs, logs, and internal planning notes are intentionally not tracked in this public repository.
@@ -77,7 +78,7 @@ Package archives, build outputs, logs, and internal planning notes are intention
 - Short name: `UTAC`
 - Module folder: `UTAC`
 - Module UUID: `300fb883-8af8-4be9-a101-171b56698dc5`
-- Version: `1.0.9`
+- Version: `1.1.2.5`
 
 ## License
 

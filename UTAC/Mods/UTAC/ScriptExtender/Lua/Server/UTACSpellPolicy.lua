@@ -4,15 +4,33 @@
 local SpellPolicy = {}
 
 local SPELL_POLICY_STATUS = "UTAC_SPELL_POLICY_BLOCKED"
-local SPELL_POLICY_REQUIREMENT_GATE = "not HasStatus('UTAC_SPELL_POLICY_BLOCKED')"
-local SPELL_POLICY_TARGET_GATE = "not HasStatus('UTAC_SPELL_POLICY_BLOCKED', context.Source)"
+local SPELL_POLICY_OLD_REQUIREMENT_GATE = "not HasStatus('UTAC_SPELL_POLICY_BLOCKED')"
+local SPELL_POLICY_OLD_TARGET_GATE = "not HasStatus('UTAC_SPELL_POLICY_BLOCKED', context.Source)"
+local SPELL_POLICY_CASTER_GATE = "not HasStatus('UTAC_SPELL_POLICY_BLOCKED', context:Self)"
+local SPELL_POLICY_UTAC_ALLY_GATE = "not HasStatus('UTAC_ALLY')"
+local SPELL_POLICY_UTAC_ALLY_SOURCE_GATE = "not HasStatus('UTAC_ALLY', context.Source)"
+local SPELL_POLICY_OLD_COMBAT_GATE = "not HasStatus('UTAC_ALLY') or not Combat()"
+local SPELL_POLICY_OLD_COMBINED_GATE = "(not HasStatus('UTAC_SPELL_POLICY_BLOCKED')) and (not HasStatus('UTAC_ALLY') or not Combat())"
+local SPELL_POLICY_SOURCE_MARKER_GATE = "not HasStatus('UTAC_SPELL_POLICY_BLOCKED', context.Source)"
+local SPELL_POLICY_SOURCE_COMBAT_GATE = "not HasStatus('UTAC_ALLY', context.Source) or not Combat(context.Source)"
+local SPELL_POLICY_MARKER_GATE = "(" .. SPELL_POLICY_SOURCE_MARKER_GATE .. ") and (" .. SPELL_POLICY_SOURCE_COMBAT_GATE .. ")"
+local SPELL_POLICY_TAC_GATE = SPELL_POLICY_UTAC_ALLY_GATE
 local PATCH_FIELD_GATES = {
-    RequirementConditions = SPELL_POLICY_REQUIREMENT_GATE,
+    RequirementConditions = SPELL_POLICY_TAC_GATE,
 }
 local CLEANUP_FIELDS = { "RequirementConditions", "TargetConditions" }
 local KNOWN_POLICY_GATES = {
-    SPELL_POLICY_REQUIREMENT_GATE,
-    SPELL_POLICY_TARGET_GATE,
+    SPELL_POLICY_OLD_REQUIREMENT_GATE,
+    SPELL_POLICY_OLD_TARGET_GATE,
+    SPELL_POLICY_CASTER_GATE,
+    SPELL_POLICY_UTAC_ALLY_GATE,
+    SPELL_POLICY_UTAC_ALLY_SOURCE_GATE,
+    SPELL_POLICY_OLD_COMBAT_GATE,
+    SPELL_POLICY_OLD_COMBINED_GATE,
+    SPELL_POLICY_SOURCE_MARKER_GATE,
+    SPELL_POLICY_SOURCE_COMBAT_GATE,
+    SPELL_POLICY_MARKER_GATE,
+    SPELL_POLICY_TAC_GATE,
 }
 
 local SLOT_LIMIT_STATUSES = {
@@ -27,6 +45,60 @@ local DEFAULT_BLOCKED_SPELLS = {
     "Shout_FeatherFall",
     "Target_FogCloud",
     "Target_BlessingOfTheTrickster",
+}
+
+local TURN_SCOPED_THROW_BLOCK_SPELLS = {
+    "Throw_Throw",
+    "Throw_ImprovisedWeapon",
+    "Throw_FrenziedThrow",
+}
+
+local SPELL_POLICY_PREFIXES = {
+    "Projectile",
+    "Target",
+    "Shout",
+    "Zone",
+    "Rush",
+    "Teleportation",
+    "ProjectileStrike",
+}
+
+local SPELL_POLICY_UPCAST_SUFFIXES = { "_2", "_3", "_4", "_5", "_6" }
+
+local SPELL_POLICY_ALIASES = {
+    magicmissile = {
+        "Projectile_MagicMissile",
+        "Projectile_MagicMissile_2",
+        "Projectile_MagicMissile_3",
+        "Projectile_MagicMissile_4",
+        "Projectile_MagicMissile_5",
+        "Projectile_MagicMissile_6",
+        "Projectile_UND_MagicMissile_SocietyOfBrilliance_Amulet",
+        "Projectile_MAG_MagicMissile_Shot",
+        "Projectile_LOW_Rolan_MagicMissile",
+    },
+    projectile_magicmissile = {
+        "Projectile_MagicMissile",
+        "Projectile_MagicMissile_2",
+        "Projectile_MagicMissile_3",
+        "Projectile_MagicMissile_4",
+        "Projectile_MagicMissile_5",
+        "Projectile_MagicMissile_6",
+        "Projectile_UND_MagicMissile_SocietyOfBrilliance_Amulet",
+        "Projectile_MAG_MagicMissile_Shot",
+        "Projectile_LOW_Rolan_MagicMissile",
+    },
+    target_magicmissile = {
+        "Projectile_MagicMissile",
+        "Projectile_MagicMissile_2",
+        "Projectile_MagicMissile_3",
+        "Projectile_MagicMissile_4",
+        "Projectile_MagicMissile_5",
+        "Projectile_MagicMissile_6",
+        "Projectile_UND_MagicMissile_SocietyOfBrilliance_Amulet",
+        "Projectile_MAG_MagicMissile_Shot",
+        "Projectile_LOW_Rolan_MagicMissile",
+    },
 }
 
 local CASTER_ARCHETYPES = {
@@ -45,9 +117,19 @@ local state = {
     slotAllowEnemies = 3,
     blockedSpells = {},
     blockedSet = {},
+    blockedSourceBySpell = {},
+    blockedTailByPrefix = {},
+    unresolvedBlockedSpells = {},
     patchedSpells = {},
+    originalAIFlagsBySpell = {},
     strippedByKey = {},
     slotStatusByKey = {},
+    blockedAttempts = {},
+    turnAIFlagOwnerKey = nil,
+    turnAIFlagOwnerCharacter = nil,
+    turnAIFlagOwnerLabel = nil,
+    turnAIFlagActive = false,
+    consoleRegistered = false,
 }
 
 local function Log(...)
@@ -104,13 +186,55 @@ end
 
 local function ApplyStatus(character, status)
     if not character or character == "" or not status then
-        return
+        return false
     end
-    if type(deps.ApplyStatusIfMissing) == "function" then
-        pcall(deps.ApplyStatusIfMissing, character, status, -1)
-    elseif Osi and type(Osi.ApplyStatus) == "function" and not HasStatus(character, status) then
-        pcall(Osi.ApplyStatus, character, status, -1, 1)
+    if HasStatus(character, status) then
+        return true
     end
+
+    -- Some Osiris status applications return successfully even when the status
+    -- does not land, so confirm before treating limiter statuses as applied.
+    local attempts = {
+        function()
+            if Osi and type(Osi.ApplyStatus) == "function" then
+                return pcall(Osi.ApplyStatus, character, status, -1, 1)
+            end
+            return false
+        end,
+        function()
+            if Osi and type(Osi.ApplyStatus) == "function" then
+                return pcall(Osi.ApplyStatus, character, status, -1)
+            end
+            return false
+        end,
+        function()
+            if type(_G.ApplyStatus) == "function" then
+                return pcall(_G.ApplyStatus, character, status, -1, 1)
+            end
+            return false
+        end,
+        function()
+            if type(_G.ApplyStatus) == "function" then
+                return pcall(_G.ApplyStatus, character, status, -1)
+            end
+            return false
+        end,
+        function()
+            if type(deps.ApplyStatusIfMissing) == "function" then
+                return pcall(deps.ApplyStatusIfMissing, character, status, -1)
+            end
+            return false
+        end,
+    }
+
+    for _, attempt in ipairs(attempts) do
+        attempt()
+        if HasStatus(character, status) then
+            return true
+        end
+    end
+
+    return false
 end
 
 local function RemoveStatus(character, status)
@@ -151,6 +275,12 @@ local function GetLiveTarget(character)
 end
 
 local function IsUTACControlled(character)
+    if type(deps.IsUTACControlled) == "function" then
+        local ok, controlled = pcall(deps.IsUTACControlled, character)
+        if ok and controlled == true then
+            return true
+        end
+    end
     local key = Normalize(character)
     if key and _G.UTAC_Companions and _G.UTAC_Companions[key] == true then
         return true
@@ -168,6 +298,10 @@ local function GetBool(settingId, fallback)
     return fallback == true
 end
 
+local function DebugLoggingEnabled()
+    return GetBool("MCM_DebugLogging", false) == true
+end
+
 local function GetNumber(settingId, fallback)
     if type(deps.GetMCM_Number) == "function" then
         local value = deps.GetMCM_Number(settingId, fallback)
@@ -176,7 +310,119 @@ local function GetNumber(settingId, fallback)
     return fallback
 end
 
+local function NormalizeListEntries(value)
+    local out = {}
+    if type(value) ~= "table" then
+        return out
+    end
+
+    if type(value.settings) == "table" and value.settings.MCM_UTACBlockedSpellList ~= nil then
+        value = value.settings.MCM_UTACBlockedSpellList
+    end
+    if type(value.Default) == "table" then
+        value = value.Default
+    end
+    if type(value) ~= "table" then
+        return out
+    end
+
+    local elements = value.elements or value.list or value.values or value.value or value
+    if type(elements) ~= "table" then
+        return out
+    end
+
+    local globallyEnabled = value.enabled ~= false
+    local function addEntry(entry, key)
+        local name = nil
+        local enabled = globallyEnabled
+        if type(entry) == "string" then
+            name = entry
+        elseif type(entry) == "boolean" and entry == true and type(key) == "string" then
+            name = key
+        elseif type(entry) == "table" then
+            name = entry.name or entry.value or entry.id or entry.Name or entry.Id
+            enabled = globallyEnabled and entry.enabled ~= false
+        end
+
+        if enabled and type(name) == "string" then
+            local trimmed = name:gsub("^%s+", ""):gsub("%s+$", "")
+            if trimmed ~= "" then
+                table.insert(out, trimmed)
+            end
+        end
+    end
+
+    for key, entry in ipairs(elements) do
+        addEntry(entry, key)
+    end
+    if #out == 0 then
+        for key, entry in pairs(elements) do
+            addEntry(entry, key)
+        end
+    end
+
+    return out
+end
+
+local function HasBlockedListPayload(value)
+    if type(value) ~= "table" then
+        return false
+    end
+    if value[1] ~= nil then
+        return true
+    end
+    if value.elements ~= nil or value.list ~= nil or value.values ~= nil or value.value ~= nil then
+        return true
+    end
+    if type(value.Default) == "table" then
+        return HasBlockedListPayload(value.Default)
+    end
+    if type(value.settings) == "table" and value.settings.MCM_UTACBlockedSpellList ~= nil then
+        return HasBlockedListPayload(value.settings.MCM_UTACBlockedSpellList)
+    end
+    return false
+end
+
+local function GetMCMAPI()
+    if not Mods then
+        return nil
+    end
+    if Mods.BG3MCM and Mods.BG3MCM.MCMAPI and type(Mods.BG3MCM.MCMAPI.GetSettingValue) == "function" then
+        return Mods.BG3MCM.MCMAPI
+    end
+    if Mods.UTAC and Mods.UTAC.MCMAPI and type(Mods.UTAC.MCMAPI.GetSettingValue) == "function" then
+        return Mods.UTAC.MCMAPI
+    end
+    return nil
+end
+
+local function ReadLiveMCMBlockedSpellList()
+    local mcmApi = GetMCMAPI()
+    if mcmApi then
+        local ok, list = pcall(function()
+            return mcmApi:GetSettingValue("MCM_UTACBlockedSpellList", deps.ModuleUUID)
+        end)
+        if ok and type(list) == "table" and HasBlockedListPayload(list) then
+            return NormalizeListEntries(list), true
+        end
+    end
+
+    if MCM and MCM.List and type(MCM.List.GetEnabled) == "function" then
+        local ok, list = pcall(MCM.List.GetEnabled, "MCM_UTACBlockedSpellList")
+        if ok and type(list) == "table" and HasBlockedListPayload(list) then
+            return NormalizeListEntries(list), true
+        end
+    end
+
+    return nil, false
+end
+
 local function GetBlockedSpellList()
+    local liveList, liveOk = ReadLiveMCMBlockedSpellList()
+    if liveOk then
+        return liveList
+    end
+
     if deps.Settings and type(deps.Settings.GetList) == "function" then
         local ok, list = pcall(deps.Settings.GetList, "MCM_UTACBlockedSpellList", {
             enabled = true,
@@ -187,7 +433,7 @@ local function GetBlockedSpellList()
             },
         })
         if ok and type(list) == "table" then
-            return list
+            return NormalizeListEntries(list)
         end
     end
     return DEFAULT_BLOCKED_SPELLS
@@ -208,10 +454,313 @@ local function GetStat(spell)
     return nil
 end
 
+local function CanResolveStats()
+    return Ext and Ext.Stats and type(Ext.Stats.Get) == "function"
+end
+
+local function AddUnique(list, seen, value)
+    if type(value) ~= "string" or value == "" or seen[value] == true then
+        return
+    end
+    seen[value] = true
+    table.insert(list, value)
+end
+
+local function NormalizeSpellAliasKey(spell)
+    if type(spell) ~= "string" then
+        return ""
+    end
+    return spell:gsub("^%s+", ""):gsub("%s+$", ""):gsub("%s+", ""):lower()
+end
+
+local function HasKnownSpellPrefix(spell)
+    if type(spell) ~= "string" then
+        return false
+    end
+    for _, prefix in ipairs(SPELL_POLICY_PREFIXES) do
+        if spell:find("^" .. prefix .. "_") then
+            return true
+        end
+    end
+    return false
+end
+
+local function StripSpellVariantSuffix(spell)
+    if type(spell) ~= "string" then
+        return ""
+    end
+    local out = spell
+    local changed = true
+    while changed do
+        changed = false
+        local nextValue = out:gsub("_AI$", "")
+        if nextValue ~= out then
+            out = nextValue
+            changed = true
+        end
+        nextValue = out:gsub("_%d$", "")
+        if nextValue ~= out then
+            out = nextValue
+            changed = true
+        end
+    end
+    return out
+end
+
+local function GetSpellPrefixAndTail(spell)
+    if type(spell) ~= "string" then
+        return nil, ""
+    end
+    local stripped = StripSpellVariantSuffix(spell:gsub("^%s+", ""):gsub("%s+$", ""))
+    for _, prefix in ipairs(SPELL_POLICY_PREFIXES) do
+        local marker = prefix .. "_"
+        if stripped:sub(1, #marker) == marker then
+            return prefix, stripped:sub(#marker + 1)
+        end
+    end
+    return nil, stripped
+end
+
+local function TailMatches(candidateTail, blockedTail)
+    if type(candidateTail) ~= "string" or type(blockedTail) ~= "string" or blockedTail == "" then
+        return false
+    end
+    return candidateTail == blockedTail or candidateTail:sub(-(#blockedTail + 1)) == "_" .. blockedTail
+end
+
+local function AddUpcastCandidates(candidates, seen, spell)
+    if type(spell) ~= "string" or spell == "" or spell:find("_%d$") then
+        return
+    end
+    for _, suffix in ipairs(SPELL_POLICY_UPCAST_SUFFIXES) do
+        AddUnique(candidates, seen, spell .. suffix)
+    end
+end
+
+local function AddAICandidates(candidates, seen, spell)
+    if type(spell) ~= "string" or spell == "" or spell:find("_AI$") then
+        return
+    end
+    AddUnique(candidates, seen, spell .. "_AI")
+    if not spell:find("_%d$") then
+        for _, suffix in ipairs(SPELL_POLICY_UPCAST_SUFFIXES) do
+            AddUnique(candidates, seen, spell .. suffix .. "_AI")
+        end
+    end
+end
+
+local function AddLoadedSpellDataTailCandidates(candidates, seen, spell)
+    if not (Ext and Ext.Stats and type(Ext.Stats.GetStats) == "function") then
+        return
+    end
+
+    local blockedPrefix, blockedTail = GetSpellPrefixAndTail(spell)
+    if not blockedPrefix or blockedTail == "" then
+        return
+    end
+
+    local ok, spellNames = pcall(Ext.Stats.GetStats, "SpellData")
+    if not ok or type(spellNames) ~= "table" then
+        return
+    end
+
+    for _, candidate in ipairs(spellNames) do
+        local candidatePrefix, candidateTail = GetSpellPrefixAndTail(candidate)
+        if candidatePrefix == blockedPrefix and TailMatches(candidateTail, blockedTail) then
+            AddUnique(candidates, seen, candidate)
+        end
+    end
+end
+
+local function AddCombatAIOverrideCandidates(candidates, seen)
+    local index = 1
+    while index <= #candidates do
+        local stat = GetStat(candidates[index])
+        local override = stat and stat.CombatAIOverrideSpell or nil
+        if type(override) == "string" and override ~= "" then
+            AddUnique(candidates, seen, override)
+            AddAICandidates(candidates, seen, override)
+        end
+        index = index + 1
+    end
+end
+
+local function GetSpellPolicyCandidates(spell)
+    local candidates = {}
+    local seen = {}
+    if type(spell) ~= "string" then
+        return candidates
+    end
+
+    local trimmed = spell:gsub("^%s+", ""):gsub("%s+$", "")
+    local compact = trimmed:gsub("%s+", "")
+    local aliasKey = NormalizeSpellAliasKey(trimmed)
+
+    AddUnique(candidates, seen, trimmed)
+    if compact ~= trimmed then
+        AddUnique(candidates, seen, compact)
+    end
+
+    local aliases = SPELL_POLICY_ALIASES[aliasKey]
+    if aliases then
+        for _, alias in ipairs(aliases) do
+            AddUnique(candidates, seen, alias)
+        end
+    end
+
+    if HasKnownSpellPrefix(compact) then
+        AddUpcastCandidates(candidates, seen, compact)
+    elseif compact ~= "" then
+        for _, prefix in ipairs(SPELL_POLICY_PREFIXES) do
+            local prefixed = prefix .. "_" .. compact
+            AddUnique(candidates, seen, prefixed)
+            AddUpcastCandidates(candidates, seen, prefixed)
+        end
+    end
+
+    local tailScanCount = #candidates
+    for index = 1, tailScanCount do
+        AddLoadedSpellDataTailCandidates(candidates, seen, candidates[index])
+    end
+
+    local initialCount = #candidates
+    for index = 1, initialCount do
+        AddAICandidates(candidates, seen, candidates[index])
+    end
+    AddCombatAIOverrideCandidates(candidates, seen)
+
+    return candidates
+end
+
+local function AddBlockedSpell(resolvedSpell, sourceSpell)
+    if type(resolvedSpell) ~= "string" or resolvedSpell == "" or state.blockedSet[resolvedSpell] == true then
+        return false
+    end
+    state.blockedSet[resolvedSpell] = true
+    state.blockedSourceBySpell[resolvedSpell] = sourceSpell or resolvedSpell
+    table.insert(state.blockedSpells, resolvedSpell)
+    return true
+end
+
+local function TrackBlockedTail(sourceSpell)
+    local prefix, tail = GetSpellPrefixAndTail(sourceSpell)
+    if not prefix or tail == "" then
+        return
+    end
+    state.blockedTailByPrefix[prefix] = state.blockedTailByPrefix[prefix] or {}
+    state.blockedTailByPrefix[prefix][tail] = sourceSpell
+end
+
+local function GetBlockedSourceForRuntimeSpell(spell)
+    if state.blockedSet[spell] == true then
+        return state.blockedSourceBySpell[spell] or spell
+    end
+
+    local prefix, tail = GetSpellPrefixAndTail(spell)
+    local tails = prefix and state.blockedTailByPrefix[prefix] or nil
+    if tails then
+        for blockedTail, sourceSpell in pairs(tails) do
+            if TailMatches(tail, blockedTail) then
+                return sourceSpell
+            end
+        end
+    end
+
+    for _, sourceSpell in pairs(state.blockedSourceBySpell or {}) do
+        local sourcePrefix, sourceTail = GetSpellPrefixAndTail(sourceSpell)
+        if sourcePrefix == prefix and TailMatches(tail, sourceTail) then
+            return sourceSpell
+        end
+    end
+
+    for _, sourceSpell in ipairs(GetBlockedSpellList()) do
+        local sourcePrefix, sourceTail = GetSpellPrefixAndTail(sourceSpell)
+        if sourcePrefix == prefix and TailMatches(tail, sourceTail) then
+            return sourceSpell
+        end
+    end
+
+    return nil
+end
+
 local function SyncStat(stat)
     if stat and type(stat.Sync) == "function" then
         pcall(function() stat:Sync() end)
     end
+end
+
+local function SplitAIFlags(flags)
+    local out = {}
+    if type(flags) ~= "string" or flags == "" then
+        return out
+    end
+    for token in flags:gmatch("[^;]+") do
+        local trimmed = token:gsub("^%s+", ""):gsub("%s+$", "")
+        if trimmed ~= "" then
+            table.insert(out, trimmed)
+        end
+    end
+    return out
+end
+
+local function AIFlagsContain(flags, wanted)
+    for _, flag in ipairs(SplitAIFlags(flags)) do
+        if flag == wanted then
+            return true
+        end
+    end
+    return false
+end
+
+local function SetAIFlags(stat, flags)
+    stat.AIFlags = table.concat(flags, ";")
+    SyncStat(stat)
+end
+
+local function EnsureCanNotUseAIFlag(spell, stat)
+    if not stat then
+        return false, false
+    end
+    if state.originalAIFlagsBySpell[spell] == nil then
+        local original = stat.AIFlags or ""
+        state.originalAIFlagsBySpell[spell] = {
+            flags = original,
+            originalHadCanNotUse = AIFlagsContain(original, "CanNotUse") == true,
+        }
+    end
+    if AIFlagsContain(stat.AIFlags, "CanNotUse") then
+        return false, true
+    end
+    local flags = SplitAIFlags(stat.AIFlags)
+    table.insert(flags, "CanNotUse")
+    SetAIFlags(stat, flags)
+    return true, true
+end
+
+local function RestoreCanNotUseAIFlag(spell, stat)
+    local record = state.originalAIFlagsBySpell[spell]
+    if record == nil then
+        return false
+    end
+    state.originalAIFlagsBySpell[spell] = nil
+    if not stat then
+        return false
+    end
+
+    local originalFlags = type(record) == "table" and tostring(record.flags or "") or tostring(record or "")
+    local originalHadCanNotUse = type(record) == "table"
+        and record.originalHadCanNotUse == true
+        or AIFlagsContain(originalFlags, "CanNotUse")
+    if originalHadCanNotUse then
+        return false
+    end
+
+    if (stat.AIFlags or "") == originalFlags then
+        return false
+    end
+
+    SetAIFlags(stat, SplitAIFlags(originalFlags))
+    return true
 end
 
 local function EnsureGateInField(stat, field, gate)
@@ -269,13 +818,120 @@ local function PatchSpell(spell)
     state.patchedSpells[spell] = true
     if changed then
         Log(string.format(
-            "Spell policy patched %s with UTAC caster gate; RequirementConditions=%s; TargetConditions=%s",
+            "Spell policy patched %s with TAC-style UTAC_ALLY requirement gate; RequirementConditions=%s; TargetConditions=%s; AIFlags=%s",
             tostring(spell),
             tostring(stat.RequirementConditions or ""),
-            tostring(stat.TargetConditions or "")
+            tostring(stat.TargetConditions or ""),
+            tostring(stat.AIFlags or "")
         ))
     end
     return true
+end
+
+local function RegisterObservedBlockedVariant(spell, sourceSpell)
+    if type(spell) ~= "string" or spell == "" or type(sourceSpell) ~= "string" or sourceSpell == "" then
+        return false
+    end
+    if state.blockedSet[spell] == true then
+        return false
+    end
+
+    AddBlockedSpell(spell, sourceSpell)
+    TrackBlockedTail(sourceSpell)
+    PatchSpell(spell)
+
+    local stat = GetStat(spell)
+    if state.turnAIFlagActive == true and stat then
+        EnsureCanNotUseAIFlag(spell, stat)
+    end
+
+    Log(string.format(
+        "Spell policy learned runtime blocked variant %s from MCM entry %s",
+        tostring(spell),
+        tostring(sourceSpell)
+    ))
+    return true
+end
+
+local function PrintLine(message)
+    if Ext and Ext.Utils and type(Ext.Utils.Print) == "function" then
+        Ext.Utils.Print("[UTAC] " .. tostring(message))
+    else
+        print("[UTAC] " .. tostring(message))
+    end
+end
+
+local function RegisterConsoleCommands()
+    if state.consoleRegistered == true or not Ext or type(Ext.RegisterConsoleCommand) ~= "function" then
+        return
+    end
+
+    Ext.RegisterConsoleCommand("utac_spell_policy_dump", function()
+        PrintLine(string.format(
+            "Spell policy enabled=%s blockedCount=%d",
+            tostring(state.spellPolicyEnabled == true),
+            #state.blockedSpells
+        ))
+        for _, spell in ipairs(state.blockedSpells) do
+            local source = state.blockedSourceBySpell[spell]
+            if source and source ~= spell then
+                PrintLine("  - " .. tostring(spell) .. " (from " .. tostring(source) .. ")")
+            else
+                PrintLine("  - " .. tostring(spell))
+            end
+        end
+    end)
+
+    Ext.RegisterConsoleCommand("utac_spell_policy_fields", function(_, spellId)
+        if not spellId or spellId == "" then
+            PrintLine("Usage: utac_spell_policy_fields <SpellId>")
+            return
+        end
+
+        local stat = GetStat(spellId)
+        if not stat then
+            PrintLine("No spell stat found for " .. tostring(spellId))
+            return
+        end
+
+        PrintLine(string.format("%s.RequirementConditions = %s", tostring(spellId), tostring(stat.RequirementConditions or "")))
+        PrintLine(string.format("%s.TargetConditions = %s", tostring(spellId), tostring(stat.TargetConditions or "")))
+        PrintLine(string.format("%s.AIFlags = %s", tostring(spellId), tostring(stat.AIFlags or "")))
+    end)
+
+    Ext.RegisterConsoleCommand("utac_spell_policy_ai_flags", function(_, spellId)
+        if not spellId or spellId == "" then
+            PrintLine("Usage: utac_spell_policy_ai_flags <SpellId>")
+            return
+        end
+
+        local stat = GetStat(spellId)
+        if not stat then
+            PrintLine("No spell stat found for " .. tostring(spellId))
+            return
+        end
+
+        local record = state.originalAIFlagsBySpell[spellId]
+        local originalHadCanNotUse = false
+        local originalFlags = ""
+        if type(record) == "table" then
+            originalHadCanNotUse = record.originalHadCanNotUse == true
+            originalFlags = tostring(record.flags or "")
+        elseif type(record) == "string" then
+            originalFlags = record
+            originalHadCanNotUse = AIFlagsContain(record, "CanNotUse")
+        end
+
+        PrintLine(string.format("%s.AIFlags = %s", tostring(spellId), tostring(stat.AIFlags or "")))
+        PrintLine(string.format("%s.hasCanNotUse = %s", tostring(spellId), tostring(AIFlagsContain(stat.AIFlags, "CanNotUse") == true)))
+        PrintLine(string.format("%s.tracked = %s", tostring(spellId), tostring(record ~= nil)))
+        PrintLine(string.format("%s.originalHadCanNotUse = %s", tostring(spellId), tostring(originalHadCanNotUse == true)))
+        PrintLine(string.format("%s.originalAIFlags = %s", tostring(spellId), tostring(originalFlags)))
+        PrintLine(string.format("activeOwnerKey = %s", tostring(state.turnAIFlagOwnerKey or "none")))
+        PrintLine(string.format("activeOwnerLabel = %s", tostring(state.turnAIFlagOwnerLabel or "none")))
+    end)
+
+    state.consoleRegistered = true
 end
 
 local function UnpatchSpell(spell)
@@ -287,9 +943,12 @@ local function UnpatchSpell(spell)
                 changed = RemoveGateFromField(stat, field, gate) or changed
             end
         end
+        changed = RestoreCanNotUseAIFlag(spell, stat) or changed
         if changed then
             Log("Spell policy unpatched " .. tostring(spell))
         end
+    else
+        state.originalAIFlagsBySpell[spell] = nil
     end
     state.patchedSpells[spell] = nil
 end
@@ -297,11 +956,63 @@ end
 local function RebuildBlockedSpellSet()
     state.blockedSpells = {}
     state.blockedSet = {}
+    state.blockedSourceBySpell = {}
+    state.blockedTailByPrefix = {}
+    state.unresolvedBlockedSpells = {}
+
+    local canResolve = CanResolveStats()
+    local entryCount = 0
+    local unresolvedCount = 0
     for _, spell in ipairs(GetBlockedSpellList()) do
-        if type(spell) == "string" and spell ~= "" and state.blockedSet[spell] ~= true then
-            state.blockedSet[spell] = true
-            table.insert(state.blockedSpells, spell)
+        if type(spell) == "string" and spell ~= "" then
+            entryCount = entryCount + 1
+            TrackBlockedTail(spell)
+            local matched = 0
+            for _, candidate in ipairs(GetSpellPolicyCandidates(spell)) do
+                if not canResolve or GetStat(candidate) then
+                    matched = matched + 1
+                    AddBlockedSpell(candidate, spell)
+                end
+            end
+
+            if matched == 0 then
+                state.unresolvedBlockedSpells[spell] = true
+                AddBlockedSpell(spell, spell)
+                unresolvedCount = unresolvedCount + 1
+            end
         end
+    end
+
+    return {
+        entries = entryCount,
+        resolved = #state.blockedSpells,
+        unresolved = unresolvedCount,
+    }
+end
+
+local function MarkBlockedAttempt(caster, spellId)
+    local key = Normalize(caster)
+    if not key then return end
+    state.blockedAttempts[key] = spellId or true
+
+    if Ext and Ext.Timer and type(Ext.Timer.WaitFor) == "function" then
+        Ext.Timer.WaitFor(1500, function()
+            if state.blockedAttempts[key] == spellId or state.blockedAttempts[key] == true then
+                state.blockedAttempts[key] = nil
+            end
+        end)
+    end
+end
+
+local function WasRecentlyBlocked(source)
+    local key = Normalize(source)
+    return key ~= nil and state.blockedAttempts[key] ~= nil
+end
+
+local function ClearBlockedAttempt(source)
+    local key = Normalize(source)
+    if key then
+        state.blockedAttempts[key] = nil
     end
 end
 
@@ -319,9 +1030,9 @@ local function PatchCurrentSpellList()
         end
     end
     for spell, _ in pairs(state.blockedSet) do
-        if state.patchedSpells[spell] ~= true then
-            PatchSpell(spell)
-        end
+        -- Stats can be reloaded after we already marked a spell as patched.
+        -- Re-run idempotently so persisted MCM lists stay blocked after reload.
+        PatchSpell(spell)
     end
 end
 
@@ -337,8 +1048,25 @@ local function RemoveSpell(character, spell)
     if not character or character == "" or not spell or not Osi or type(Osi.RemoveSpell) ~= "function" then
         return false
     end
-    local ok = pcall(Osi.RemoveSpell, character, spell, 1)
-    return ok == true
+    if HasSpell(character, spell) ~= true then
+        return false
+    end
+
+    local attempts = {
+        function() return pcall(Osi.RemoveSpell, character, spell, 1) end,
+        function() return pcall(Osi.RemoveSpell, character, spell, 0) end,
+        function() return pcall(Osi.RemoveSpell, character, spell) end,
+    }
+
+    for _, attempt in ipairs(attempts) do
+        attempt()
+        if HasSpell(character, spell) ~= true then
+            return true
+        end
+    end
+
+    Log(string.format("Spell policy failed to remove %s from %s; HasSpell stayed true", tostring(spell), tostring(character)))
+    return false
 end
 
 local function AddSpell(character, spell)
@@ -387,6 +1115,139 @@ local function RestoreUnblockedSpells()
     end
 end
 
+local function RestoreTurnScopedCanNotUse(reason)
+    local restored = 0
+    local tracked = 0
+    for _, spell in ipairs(CollectTableKeys(state.originalAIFlagsBySpell)) do
+        tracked = tracked + 1
+        if RestoreCanNotUseAIFlag(spell, GetStat(spell)) then
+            restored = restored + 1
+        end
+    end
+
+    if state.turnAIFlagActive == true or tracked > 0 then
+        Log(string.format(
+            "Spell policy restored temporary CanNotUse flags: restored=%d tracked=%d owner=%s reason=%s",
+            restored,
+            tracked,
+            tostring(state.turnAIFlagOwnerLabel or state.turnAIFlagOwnerKey or "none"),
+            tostring(reason or "restore")
+        ))
+    end
+
+    state.turnAIFlagOwnerKey = nil
+    state.turnAIFlagOwnerCharacter = nil
+    state.turnAIFlagOwnerLabel = nil
+    state.turnAIFlagActive = false
+    return restored
+end
+
+local function CollectTurnScopedCanNotUseSpells()
+    local out = {}
+    local seen = {}
+
+    if state.spellPolicyEnabled == true then
+        for _, spell in ipairs(state.blockedSpells) do
+            AddUnique(out, seen, spell)
+        end
+    end
+
+    if GetBool("MCM_DisableUTACThrow", false) == true then
+        for _, spell in ipairs(TURN_SCOPED_THROW_BLOCK_SPELLS) do
+            AddUnique(out, seen, spell)
+        end
+    end
+
+    return out
+end
+
+local function ApplyTurnScopedCanNotUse(character, reason, forceCombat)
+    if not IsModEnabled() or not IsUTACControlled(character) then
+        return false
+    end
+    if forceCombat ~= true and not IsInCombat(character) then
+        return false
+    end
+
+    local turnSpells = CollectTurnScopedCanNotUseSpells()
+    if #turnSpells == 0 then
+        return false
+    end
+
+    local key = Normalize(character)
+    if not key then
+        return false
+    end
+
+    if state.turnAIFlagOwnerKey and state.turnAIFlagOwnerKey ~= key then
+        RestoreTurnScopedCanNotUse("owner changed to " .. tostring(key) .. "; " .. tostring(reason or "turn sync"))
+    end
+
+    state.turnAIFlagOwnerKey = key
+    state.turnAIFlagOwnerCharacter = character
+    state.turnAIFlagOwnerLabel = tostring(character)
+    state.turnAIFlagActive = true
+
+    local applied = 0
+    local tracked = 0
+    local missing = 0
+    for _, spell in ipairs(turnSpells) do
+        local stat = GetStat(spell)
+        if stat then
+            local changed, isTracked = EnsureCanNotUseAIFlag(spell, stat)
+            if isTracked then
+                tracked = tracked + 1
+            end
+            if changed then
+                applied = applied + 1
+            end
+        else
+            missing = missing + 1
+        end
+    end
+
+    Log(string.format(
+        "Spell policy temporarily set CanNotUse on %d blocked spell(s) for %s; tracked=%d missing=%d reason=%s",
+        applied,
+        tostring(state.turnAIFlagOwnerLabel),
+        tracked,
+        missing,
+        tostring(reason or "turn sync")
+    ))
+    return true
+end
+
+local function RestoreTurnScopedCanNotUseIfOwner(character, reason)
+    local key = Normalize(character)
+    if key and state.turnAIFlagOwnerKey and key == state.turnAIFlagOwnerKey then
+        RestoreTurnScopedCanNotUse(reason or "owner restore")
+        return true
+    end
+
+    if DebugLoggingEnabled() and state.turnAIFlagOwnerKey then
+        Log(string.format(
+            "Spell policy ignored stale TurnEnded for %s; active owner=%s reason=%s",
+            tostring(character),
+            tostring(state.turnAIFlagOwnerLabel or state.turnAIFlagOwnerKey),
+            tostring(reason or "owner mismatch")
+        ))
+    end
+    return false
+end
+
+local function RestoreTurnScopedCanNotUseForDifferentOwner(character, reason)
+    local key = Normalize(character)
+    if key and state.turnAIFlagOwnerKey and key ~= state.turnAIFlagOwnerKey then
+        RestoreTurnScopedCanNotUse(string.format(
+            "%s; new turn owner=%s",
+            tostring(reason or "turn owner changed"),
+            tostring(character)
+        ))
+        return true
+    end
+    return false
+end
+
 local function ApplySpellPolicyForCharacter(character, reason, combatState)
     local key = Normalize(character)
     if not key then
@@ -405,11 +1266,8 @@ local function ApplySpellPolicyForCharacter(character, reason, combatState)
     end
 
     local removed = 0
-    for _, target in ipairs(GetStatusTargets(character)) do
-        ApplyStatus(target, SPELL_POLICY_STATUS)
-    end
-
     local liveTarget = GetLiveTarget(character)
+
     for _, spell in ipairs(state.blockedSpells) do
         if HasSpell(liveTarget, spell) then
             if RemoveSpell(liveTarget, spell) then
@@ -592,6 +1450,7 @@ local function SyncSlotLimiter(character, archetype, combatState, casterResource
 end
 
 local function ClearSpellPolicyState(reason)
+    RestoreTurnScopedCanNotUse(reason or "spell policy clear")
     for _, key in ipairs(CollectTableKeys(state.strippedByKey)) do
         SpellPolicy.RestoreStrippedSpells(key, reason)
     end
@@ -624,21 +1483,37 @@ end
 function SpellPolicy.Initialize(newDeps)
     deps = newDeps or {}
     state.initialized = true
-    SpellPolicy.RefreshSettings("initialize")
+    RegisterConsoleCommands()
 end
 
 function SpellPolicy.RefreshSettings(reason)
+    local previousTurnOwner = state.turnAIFlagOwnerCharacter or state.turnAIFlagOwnerKey
+    local hadTurnOwner = state.turnAIFlagActive == true
+    RestoreTurnScopedCanNotUse("settings refresh: " .. tostring(reason or "settings"))
+
     state.spellPolicyEnabled = GetBool("MCM_EnableUTACSpellPolicy", false)
     state.slotLimiterEnabled = GetBool("MCM_EnableSpellSlotLimiter", false)
     state.slotMinLevel = GetNumber("MCM_SpellSlotLimiter_MinLevel", 3)
     state.slotAllowEnemies = GetNumber("MCM_SpellSlotLimiter_AllowEnemiesAtLeast", 3)
 
-    RebuildBlockedSpellSet()
+    local summary = RebuildBlockedSpellSet()
     PatchCurrentSpellList()
     RestoreUnblockedSpells()
 
+    if state.spellPolicyEnabled == true or (summary and summary.unresolved or 0) > 0 then
+        Log(string.format(
+            "Spell policy refreshed: entries=%d resolved=%d unresolved=%d reason=%s",
+            summary and summary.entries or 0,
+            summary and summary.resolved or 0,
+            summary and summary.unresolved or 0,
+            tostring(reason or "settings")
+        ))
+    end
+
     if state.spellPolicyEnabled ~= true then
         ClearSpellPolicyState("spell policy disabled: " .. tostring(reason or "settings"))
+    elseif hadTurnOwner and previousTurnOwner then
+        ApplyTurnScopedCanNotUse(previousTurnOwner, "settings refresh reapply: " .. tostring(reason or "settings"), true)
     end
     if state.slotLimiterEnabled ~= true then
         ClearSlotLimiterState("slot limiter disabled: " .. tostring(reason or "settings"))
@@ -649,6 +1524,23 @@ function SpellPolicy.SyncForCharacter(character, archetype, combatState, casterR
     if not state.initialized then return end
     ApplySpellPolicyForCharacter(character, reason, combatState)
     SyncSlotLimiter(character, archetype, combatState, casterResource, reason)
+end
+
+function SpellPolicy.ApplyTurnScopedCanNotUse(character, reason)
+    if not state.initialized then return false end
+    return ApplyTurnScopedCanNotUse(character, reason, true)
+end
+
+function SpellPolicy.RestoreTurnScopedCanNotUse(reason)
+    return RestoreTurnScopedCanNotUse(reason)
+end
+
+function SpellPolicy.RestoreTurnScopedCanNotUseIfOwner(character, reason)
+    return RestoreTurnScopedCanNotUseIfOwner(character, reason)
+end
+
+function SpellPolicy.RestoreTurnScopedCanNotUseForDifferentOwner(character, reason)
+    return RestoreTurnScopedCanNotUseForDifferentOwner(character, reason)
 end
 
 function SpellPolicy.RestoreStrippedSpells(character, reason)
@@ -670,6 +1562,11 @@ end
 
 function SpellPolicy.ClearForCharacter(character, reason)
     if not character or character == "" then return end
+    local key = Normalize(character)
+    if key then
+        state.blockedAttempts[key] = nil
+    end
+    RestoreTurnScopedCanNotUseIfOwner(character, reason or "clear character")
     SpellPolicy.RestoreStrippedSpells(character, reason)
     for _, target in ipairs(GetStatusTargets(character)) do
         RemoveStatus(target, SPELL_POLICY_STATUS)
@@ -677,7 +1574,20 @@ function SpellPolicy.ClearForCharacter(character, reason)
     ClearSlotLimitStatuses(character, reason)
 end
 
+function SpellPolicy.HasStateForCharacter(character)
+    local key = Normalize(character)
+    if not key then return false end
+    return state.strippedByKey[key] ~= nil
+        or state.slotStatusByKey[key] ~= nil
+        or state.turnAIFlagOwnerKey == key
+end
+
 function SpellPolicy.ClearAll(reason)
+    state.blockedAttempts = {}
+    RestoreTurnScopedCanNotUse(reason or "clear all")
+    for _, spell in ipairs(CollectTableKeys(state.patchedSpells)) do
+        UnpatchSpell(spell)
+    end
     for _, key in ipairs(CollectTableKeys(state.strippedByKey)) do
         SpellPolicy.RestoreStrippedSpells(key, reason)
     end
@@ -695,6 +1605,9 @@ function SpellPolicy.ClearAll(reason)
 end
 
 function SpellPolicy.ClearNonCombat(reason)
+    if state.turnAIFlagOwnerKey and not IsInCombat(state.turnAIFlagOwnerCharacter or state.turnAIFlagOwnerKey) then
+        RestoreTurnScopedCanNotUse(reason or "noncombat cleanup")
+    end
     for _, key in ipairs(CollectTableKeys(state.strippedByKey)) do
         if not IsInCombat(key) then
             SpellPolicy.ClearForCharacter(key, reason)
@@ -717,15 +1630,57 @@ function SpellPolicy.ResyncTracked(reason)
     end
 end
 
-function SpellPolicy.OnUsingSpell(caster, spellId)
-    if state.spellPolicyEnabled ~= true or not spellId or state.blockedSet[spellId] ~= true then
+function SpellPolicy.ObserveSpell(caster, spellId, eventName, detail)
+    if DebugLoggingEnabled() ~= true or not spellId or spellId == "" then
         return false
     end
     if not IsModEnabled() or not IsUTACControlled(caster) then
         return false
     end
 
+    local stat = GetStat(spellId)
     local liveTarget = GetLiveTarget(caster)
+    local matchedSource = GetBlockedSourceForRuntimeSpell(spellId)
+    if matchedSource and state.blockedSet[spellId] ~= true then
+        RegisterObservedBlockedVariant(spellId, matchedSource)
+    end
+    local sourceEntry = matchedSource or spellId
+    Log(string.format(
+        "Spell policy observe: event=%s spell=%s sourceEntry=%s caster=%s liveTarget=%s controlled=%s inCombat=%s blockedExact=%s hasUTACAlly=%s hasPolicyStatus=%s hasSpell=%s RequirementConditions=%s TargetConditions=%s AIFlags=%s%s",
+        tostring(eventName or "unknown"),
+        tostring(spellId),
+        tostring(sourceEntry),
+        tostring(caster),
+        tostring(liveTarget),
+        tostring(IsUTACControlled(caster) == true),
+        tostring(IsInCombat(caster) == true),
+        tostring(matchedSource ~= nil),
+        tostring(HasStatus(liveTarget, "UTAC_ALLY") == true),
+        tostring(HasStatus(liveTarget, SPELL_POLICY_STATUS) == true),
+        tostring(HasSpell(liveTarget, spellId) == true),
+        tostring(stat and stat.RequirementConditions or ""),
+        tostring(stat and stat.TargetConditions or ""),
+        tostring(stat and stat.AIFlags or ""),
+        detail and (" detail=" .. tostring(detail)) or ""
+    ))
+    return true
+end
+
+function SpellPolicy.OnUsingSpell(caster, spellId)
+    local sourceSpell = spellId and GetBlockedSourceForRuntimeSpell(spellId) or nil
+    if state.spellPolicyEnabled ~= true or not spellId or not sourceSpell then
+        return false
+    end
+    if not IsModEnabled() or not IsUTACControlled(caster) then
+        return false
+    end
+
+    if state.blockedSet[spellId] ~= true then
+        RegisterObservedBlockedVariant(spellId, sourceSpell)
+    end
+
+    local liveTarget = GetLiveTarget(caster)
+    MarkBlockedAttempt(caster, spellId)
     if HasSpell(liveTarget, spellId) then
         RemoveSpell(liveTarget, spellId)
         local key = Normalize(caster)
@@ -737,7 +1692,67 @@ function SpellPolicy.OnUsingSpell(caster, spellId)
     if Osi and type(Osi.PurgeOsirisQueue) == "function" then
         pcall(Osi.PurgeOsirisQueue, caster, 1)
     end
-    Log(string.format("Spell policy late guard blocked spell %s from %s", tostring(spellId), tostring(caster)))
+    if sourceSpell and sourceSpell ~= spellId then
+        Log(string.format("Spell policy late guard blocked spell %s from %s (matched MCM entry %s)", tostring(spellId), tostring(caster), tostring(sourceSpell)))
+    else
+        Log(string.format("Spell policy late guard blocked spell %s from %s", tostring(spellId), tostring(caster)))
+    end
+    return true
+end
+
+function SpellPolicy.OnUsingSpellAfter(caster, spellId)
+    local sourceSpell = spellId and GetBlockedSourceForRuntimeSpell(spellId) or nil
+    if state.spellPolicyEnabled ~= true or not spellId or not sourceSpell then
+        return false
+    end
+    if not IsModEnabled() or not IsUTACControlled(caster) then
+        return false
+    end
+
+    local stat = GetStat(spellId)
+    local liveTarget = GetLiveTarget(caster)
+    Log(string.format(
+        "Spell policy observed blocked spell attempt after guard: spell=%s sourceEntry=%s caster=%s liveTarget=%s hasUTACAlly=%s RequirementConditions=%s TargetConditions=%s AIFlags=%s",
+        tostring(spellId),
+        tostring(sourceSpell),
+        tostring(caster),
+        tostring(liveTarget),
+        tostring(HasStatus(liveTarget, "UTAC_ALLY") == true),
+        tostring(stat and stat.RequirementConditions or ""),
+        tostring(stat and stat.TargetConditions or ""),
+        tostring(stat and stat.AIFlags or "")
+    ))
+    return true
+end
+
+function SpellPolicy.OnStatusApplied(target, status, source)
+    if state.spellPolicyEnabled ~= true or not WasRecentlyBlocked(source) then
+        return false
+    end
+    if not IsModEnabled() or not IsUTACControlled(source) then
+        ClearBlockedAttempt(source)
+        return false
+    end
+    if type(status) == "string" and status:find("^UTAC_") then
+        return false
+    end
+
+    if Osi and type(Osi.RemoveStatus) == "function" then
+        local ok = pcall(Osi.RemoveStatus, target, status, source)
+        if not ok then
+            pcall(Osi.RemoveStatus, target, status)
+        end
+    end
+    if Osi and type(Osi.PurgeOsirisQueue) == "function" then
+        pcall(Osi.PurgeOsirisQueue, source, 1)
+    end
+    ClearBlockedAttempt(source)
+    Log(string.format(
+        "Spell policy post-leak cleanup removed status %s from %s after blocked spell source=%s",
+        tostring(status),
+        tostring(target),
+        tostring(source)
+    ))
     return true
 end
 

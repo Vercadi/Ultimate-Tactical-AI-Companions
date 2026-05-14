@@ -151,7 +151,7 @@ new entry "UTAC_SPELL_POLICY_BLOCKED"
 type "StatusData"
 data "StatusType" "BOOST"
 data "RemoveEvents" "OnCombatEnded"
-data "StatusPropertyFlags" "DisableOverhead;DisableCombatlog;DisablePortraitIndicator;IgnoreResting"
+data "StatusPropertyFlags" "DisableOverhead;DisableCombatlog;DisablePortraitIndicator"
 
 new entry "UTAC_SLOT_LIMIT_L2_PLUS"
 type "StatusData"

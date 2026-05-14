@@ -55,4 +55,7 @@ Packed/
 *.7z
 *.rar
 
+# Private/internal research notes
+UTAC Docs/Audit/
+
 # Keep BG3 source assets under Public/.../Generated/Data tracked.

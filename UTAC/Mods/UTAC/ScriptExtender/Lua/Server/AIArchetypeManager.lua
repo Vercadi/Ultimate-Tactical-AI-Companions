@@ -1,11 +1,11 @@
 -- ||                      ULTIMATE TACTICAL AI COMPANIONS (UTAC)                 ||
 -- =================================================================================
 -- Requires: Norbyte BG3 Script Extender (see ScriptExtender/Config.json RequiredVersion; min 9).
--- Mod version: 1.0.9 (see meta.lsx Version64).
+-- Mod version: 1.1.2.5 (see meta.lsx Version64).
 -- =================================================================================
 
 local ModuleUUID = "300fb883-8af8-4be9-a101-171b56698dc5"
-local BUILD_TAG = "2026-05-04-movement-safety-spell-policy"
+local BUILD_TAG = "2026-05-11-spell-policy-turn-flags"
 local NULL_UUID = "NULL_00000000-0000-0000-0000-000000000000"
 local UTACSettings = Ext.Require("Server/UTACSettings.lua")
 
@@ -15,6 +15,7 @@ _G.UTAC_BaseStatusByCharacter = _G.UTAC_BaseStatusByCharacter or {}
 
 local Config = Ext.Require("Server/Config.lua")
 local UTACSpellPolicy = Ext.Require("Server/UTACSpellPolicy.lua")
+local RemovePassiveIfPresent
 
 -- =================================================================================
 -- ||                        HELPERS & MCM                                        ||
@@ -288,6 +289,18 @@ local RuntimeProcessedStatusApplied = {}
 local SUMMON_TAG = "SUMMON_26c78224-a4c1-43e4-b943-75e7fa1bfa41"
 local AUTO_SUMMON_RETRY_DELAYS_MS = { 100, 500, 1500 }
 local AUTO_SUMMON_DEFAULT_STATUS = "UTAC_SUMMON"
+local KNOWN_AUTO_SUMMON_TEMPLATE_NAME_UUIDS = {
+    -- Pack Rats utility summons. Names map only to UUIDs already present in
+    -- the MCM exclusion list, so removing the UUID still allows automation.
+    VSH_PackRat_Generic = "242bfc84-42ad-4719-8b34-ff854332317d",
+    VSH_PackRat_Crime = "c04db4ef-3902-4ffb-9b84-e0f443b12bb3",
+    VSH_PackRat_Meat = "99c92762-14b2-4660-9781-6a365f8ccebd",
+    VSH_PackRat_Trash = "0d6d85ce-c985-4a1f-be91-a2aaba8e3c57",
+    VSH_PackRat_Gold = "6d730ba9-0573-4351-8227-f077c0181082",
+    VSH_PackRat_Necro = "b99d4d1f-c68f-4ed7-8962-7cb2d288a89b",
+    VSH_PackRat_Boom = "1a8fe2e9-518c-4e64-bfef-54b1ebb5d242",
+    VSH_PackRat_Alchemy = "58712c7a-84fa-46a7-beaf-d7e8c480203d",
+}
 local SHADOW_CURSE_IMMUNITY_STATUS = "UTAC_SHADOW_CURSE_IMMUNITY"
 local SCULPT_SPELLS_HELPER_STATUS = Config.SculptSpellsHelperStatus
 local AUTO_SUMMON_CONTROL_STATUSES = {
@@ -575,6 +588,70 @@ GetHostCharacterSafe = function()
     return nil
 end
 
+local function GetStrictHostCharacterSafe()
+    if type(Osi.GetHostCharacter) == "function" then
+        local ok, host = pcall(Osi.GetHostCharacter)
+        if ok and host and host ~= "" then
+            return host
+        end
+    end
+
+    local avatarDb = Osi.DB_Avatars
+    if avatarDb and type(avatarDb.Get) == "function" then
+        local ok, rows = pcall(function()
+            return avatarDb:Get(nil)
+        end)
+        if ok and rows then
+            for _, row in ipairs(rows) do
+                local candidate = row[1]
+                if candidate and candidate ~= "" then
+                    return candidate
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function IsInCharacterDbSafe(db, key)
+    if not db or type(db.Get) ~= "function" or not key then
+        return false
+    end
+
+    local ok, rows = pcall(function()
+        return db:Get(nil)
+    end)
+    if not ok or not rows then
+        return false
+    end
+
+    for _, row in ipairs(rows) do
+        if CC_Normalize(row[1]) == key then
+            return true
+        end
+    end
+    return false
+end
+
+local function IsHostOrPlayerCharacter(character)
+    if not character or character == "" then
+        return false
+    end
+
+    local key = CC_Normalize(character)
+    local host = GetStrictHostCharacterSafe()
+    local hostKey = CC_Normalize(host)
+    if key and hostKey and key == hostKey then
+        return true
+    end
+
+    if IsInCharacterDbSafe(Osi.DB_Avatars, key) then
+        return true
+    end
+
+    return false
+end
+
 local function IsExistingCharacter(character)
     if not character or character == "" or type(Osi.Exists) ~= "function" then
         return false
@@ -817,6 +894,60 @@ local function HasAnyNPCModeCombatStatus(character)
         end
     end
     return false, nil
+end
+
+local HOST_PLAYER_NPC_MODE_STATUSES = {
+    "UTAC_TOGGLE_IS_NPC",
+    "UTAC_REAPPLY_NPC",
+    "UTAC_REAPPLY_NPC_NEEDED",
+}
+
+local function ClearHostPlayerNPCModeState(character, reason)
+    if not IsHostOrPlayerCharacter(character) then
+        return false
+    end
+
+    local key = CC_Normalize(character)
+    local seen = {}
+    local targets = {}
+    local function addTarget(target)
+        if not target or target == "" or seen[target] then return end
+        seen[target] = true
+        table.insert(targets, target)
+    end
+
+    addTarget(character)
+    addTarget(key)
+    if key then
+        addTarget(RuntimeCharacterByKey[key])
+    end
+
+    local changed = false
+    for _, target in ipairs(targets) do
+        for _, status in ipairs(HOST_PLAYER_NPC_MODE_STATUSES) do
+            changed = RemoveStatusIfPresent(target, status, 3) or changed
+        end
+        ClearNPCModeCombatStatuses(target)
+        if RemovePassiveIfPresent then
+            changed = RemovePassiveIfPresent(target, "UTAC_ToggleNPC") or changed
+        end
+    end
+
+    if key then
+        RuntimeNPCModeOwner[key] = nil
+        RuntimeNPCModeTarget[key] = nil
+        RuntimeNPCModeCombatMonitor[key] = nil
+        RuntimeNPCRestorePending[key] = nil
+    end
+
+    if changed then
+        InfoPrint(string.format(
+            "NPC Mode blocked for host/player %s; cleared UTAC NPC toggle state (%s)",
+            tostring(key or character),
+            tostring(reason or "unknown")
+        ))
+    end
+    return changed
 end
 
 local function AnyTrackedCompanionInCombat()
@@ -1065,12 +1196,16 @@ function ReinforceUTACControl()
                 Osi.ApplyStatus(uuid, "AI_TRAP_AWARENESS", -1, 1)
             end
             SyncSculptSpellsHelperForCharacter(uuid, GetMCM_Bool("MCM_EnableSculptSpellsHelper", false))
-            pcall(function()
-                if Osi.HasPassive(uuid, "UTAC_ToggleNPC") == 0 then
-                    Osi.AddPassive(uuid, "UTAC_ToggleNPC")
-                    InfoPrint("ReinforceUTACControl: Granted UTAC_ToggleNPC to " .. tostring(uuid))
-                end
-            end)
+            if IsHostOrPlayerCharacter(uuid) then
+                ClearHostPlayerNPCModeState(uuid, "ReinforceUTACControl")
+            else
+                pcall(function()
+                    if Osi.HasPassive(uuid, "UTAC_ToggleNPC") == 0 then
+                        Osi.AddPassive(uuid, "UTAC_ToggleNPC")
+                        InfoPrint("ReinforceUTACControl: Granted UTAC_ToggleNPC to " .. tostring(uuid))
+                    end
+                end)
+            end
         end
     end
 end
@@ -1094,15 +1229,8 @@ local function UpdateHealerUrgencyOverride(character, combatState)
         or (combatState and combatState.selfLowHP == true)
         or (type(selfHP) == "number" and selfHP <= triage)
 
-    local hasOverride = Osi.HasActiveStatus(character, "UTAC_HEALER_NONURGENT_OVERRIDE") == 1
-    if hasUrgentNeed then
-        if hasOverride then
-            Osi.RemoveStatus(character, "UTAC_HEALER_NONURGENT_OVERRIDE")
-        end
-    else
-        if not hasOverride then
-            Osi.ApplyStatus(character, "UTAC_HEALER_NONURGENT_OVERRIDE", -1, 1)
-        end
+    if Osi.HasActiveStatus(character, "UTAC_HEALER_NONURGENT_OVERRIDE") == 1 then
+        Osi.RemoveStatus(character, "UTAC_HEALER_NONURGENT_OVERRIDE")
     end
     return hasUrgentNeed
 end
@@ -1116,7 +1244,11 @@ local function ApplyCombatStatus(character)
 
     InfoPrint("ApplyCombatStatus for tracked companion: " .. tostring(character))
 
-    local isNPCMode = Osi.HasActiveStatus(character, "UTAC_TOGGLE_IS_NPC") == 1
+    local isHostPlayer = IsHostOrPlayerCharacter(character) or IsHostOrPlayerCharacter(cKey)
+    if isHostPlayer then
+        ClearHostPlayerNPCModeState(character, "ApplyCombatStatus")
+    end
+    local isNPCMode = (not isHostPlayer) and Osi.HasActiveStatus(character, "UTAC_TOGGLE_IS_NPC") == 1
     local statusToApply = nil
     local baseStatusForCombat = nil
 
@@ -1152,9 +1284,6 @@ local function ApplyCombatStatus(character)
             InfoPrint(string.format("Applied combat status '%s' to %s", statusToApply, tostring(character)))
         else
             InfoPrint(string.format("Combat status '%s' already active on %s", statusToApply, tostring(character)))
-        end
-        if baseStatusForCombat == "UTAC_HEALER" and Osi.HasActiveStatus(character, "UTAC_HEALER_NONURGENT_OVERRIDE") == 0 then
-            Osi.ApplyStatus(character, "UTAC_HEALER_NONURGENT_OVERRIDE", -1, 1)
         end
     else
         InfoPrint("FAILED: No base archetype status found on " .. tostring(character) .. " to determine combat status.")
@@ -1207,7 +1336,7 @@ local MOD_DISABLE_RUNTIME_STATUSES = {
     SCULPT_SPELLS_HELPER_STATUS,
 }
 
-local function RemovePassiveIfPresent(character, passive)
+RemovePassiveIfPresent = function(character, passive)
     if not character or character == "" or not passive then return end
     local removePassive = type(RemovePassive) == "function" and RemovePassive or Osi.RemovePassive
     if type(removePassive) ~= "function" then return end
@@ -1299,6 +1428,55 @@ local function NormalizeUuidToken(value)
     return value:lower():match("(%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x)")
 end
 
+local function ExtractTemplateNameFromHandle(value)
+    if type(value) ~= "string" then
+        return nil
+    end
+    local name = value:match("^(.-)_%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$")
+    if name and name ~= "" then
+        return name
+    end
+    return nil
+end
+
+local function ExtractTemplateNameFromValue(value, depth)
+    if not value or depth > 2 then
+        return nil
+    end
+
+    if type(value) == "string" then
+        return ExtractTemplateNameFromHandle(value)
+    end
+
+    local valueType = type(value)
+    if valueType ~= "table" and valueType ~= "userdata" then
+        return nil
+    end
+
+    local directKeys = {
+        "Name",
+        "TemplateName",
+        "RootTemplateName",
+    }
+
+    for _, key in ipairs(directKeys) do
+        local ok, candidate = pcall(function()
+            return value[key]
+        end)
+        if ok then
+            if type(candidate) == "string" and candidate ~= "" then
+                return candidate
+            end
+            local nested = ExtractTemplateNameFromValue(candidate, depth + 1)
+            if nested then
+                return nested
+            end
+        end
+    end
+
+    return nil
+end
+
 local function ExtractUuidFromTemplateValue(value, depth)
     if not value or depth > 2 then
         return nil
@@ -1308,19 +1486,30 @@ local function ExtractUuidFromTemplateValue(value, depth)
         return NormalizeUuidToken(value)
     end
 
-    if type(value) ~= "table" then
+    local valueType = type(value)
+    if valueType ~= "table" and valueType ~= "userdata" then
         return nil
     end
 
     local directKeys = {
+        "MapKey",
         "TemplateId",
         "TemplateGuid",
+        "TemplateUUID",
+        "TemplateUuid",
+        "TemplateMapKey",
         "Template",
         "RootTemplate",
         "RootTemplateId",
         "RootTemplateGuid",
+        "RootTemplateUUID",
+        "RootTemplateUuid",
+        "RootTemplateMapKey",
+        "ResourceID",
+        "ResourceId",
         "ParentTemplate",
         "ParentTemplateId",
+        "ParentTemplateGuid",
         "ResourceUUID",
         "ResourceGuid",
         "UUID",
@@ -1356,6 +1545,14 @@ local function AddTemplateCandidate(candidates, seen, value)
     if uuid and not seen[uuid] then
         seen[uuid] = true
         table.insert(candidates, uuid)
+    end
+end
+
+local function AddTemplateNameCandidate(candidates, seen, value)
+    local name = ExtractTemplateNameFromValue(value, 0)
+    if name and not seen[name] then
+        seen[name] = true
+        table.insert(candidates, name)
     end
 end
 
@@ -1413,6 +1610,43 @@ local function GetCharacterTemplateUuidSafe(character)
     end
 
     return candidates[1]
+end
+
+local function GetCharacterTemplateNamesSafe(character)
+    local candidates = {}
+    local seen = {}
+
+    AddTemplateNameCandidate(candidates, seen, character)
+
+    if not character or character == "" then
+        return candidates
+    end
+
+    if Ext and Ext.Entity and type(Ext.Entity.Get) == "function" then
+        local okEntity, entity = pcall(Ext.Entity.Get, character)
+        if okEntity and entity then
+            local okCollect = pcall(function()
+                AddTemplateNameCandidate(candidates, seen, entity.Template)
+                AddTemplateNameCandidate(candidates, seen, entity.RootTemplate)
+
+                local serverCharacter = entity.ServerCharacter
+                if serverCharacter then
+                    AddTemplateNameCandidate(candidates, seen, serverCharacter.Template)
+                    AddTemplateNameCandidate(candidates, seen, serverCharacter.RootTemplate)
+                end
+
+                local gameObjectVisual = entity.GameObjectVisual
+                if gameObjectVisual then
+                    AddTemplateNameCandidate(candidates, seen, gameObjectVisual.RootTemplate)
+                end
+            end)
+            if not okCollect then
+                -- Template-name fallback is best-effort only.
+            end
+        end
+    end
+
+    return candidates
 end
 
 local function GetCombatGuidForSafe(character)
@@ -1577,6 +1811,36 @@ local function IsLikelyAlliedSummon(candidate)
     return false, "owner is not a party/UTAC ally", owner or followerOwner
 end
 
+local function ShouldInspectAutoSummonCandidate(candidate, reason)
+    local reasonText = tostring(reason or "")
+    if string.find(reasonText, "^DB_PlayerSummons")
+        or string.find(reasonText, "^DB_PartyFollowers") then
+        return true
+    end
+
+    local liveCharacter, key, exists = ResolveCharacterHandle(candidate)
+    if not key or not exists then
+        return false
+    end
+
+    if RuntimeAutoSummonCombat[key] ~= nil then
+        return true
+    end
+    if IsInOsirisCharacterDb(Osi.DB_PlayerSummons, key)
+        or IsInOsirisCharacterDb(Osi.DB_PartyFollowers, key) then
+        return true
+    end
+    if IsSummonSafe(liveCharacter) or IsTaggedSafe(liveCharacter, SUMMON_TAG) then
+        return true
+    end
+    if GetTemporaryPartyFollowerOwner(liveCharacter) ~= nil then
+        return true
+    end
+
+    local owner = GetCharacterOwnerSafe(liveCharacter)
+    return owner ~= nil and not IsPartyMemberSafe(liveCharacter)
+end
+
 local function ScheduleSummonCombatStatus(character, reason)
     local liveCharacter, key, exists = ResolveCharacterHandle(character)
     if not key or not exists or not _G.UTAC_Companions[key] or not IsInCombatSafe(liveCharacter) then
@@ -1695,6 +1959,15 @@ local function GetExcludedAutoSummonTemplate(candidate, liveCharacter, key)
         local templateUuid = GetCharacterTemplateUuidSafe(target)
         if templateUuid and exclusions[templateUuid] then
             return true, templateUuid
+        end
+    end
+
+    for _, target in ipairs(targets) do
+        for _, templateName in ipairs(GetCharacterTemplateNamesSafe(target)) do
+            local templateUuid = KNOWN_AUTO_SUMMON_TEMPLATE_NAME_UUIDS[templateName]
+            if templateUuid and exclusions[templateUuid] then
+                return true, templateUuid
+            end
         end
     end
 
@@ -2123,6 +2396,54 @@ local function CollectCombatCacheCharacters()
     return out
 end
 
+local function HasAnyUTACRuntimeState(characterOrKey, liveCharacter)
+    local key = CC_Normalize(characterOrKey) or CC_Normalize(liveCharacter)
+    if not key then
+        return false
+    end
+    liveCharacter = liveCharacter or RuntimeCharacterByKey[key] or characterOrKey
+
+    if _G.UTAC_Companions and _G.UTAC_Companions[key] then return true end
+    if _G.UTAC_BaseStatusByCharacter and _G.UTAC_BaseStatusByCharacter[key] then return true end
+    if RuntimeAutoSummonCombat[key] ~= nil then return true end
+    if RuntimeNPCModeOwner[key] ~= nil
+        or RuntimeNPCModeTarget[key] ~= nil
+        or RuntimeNPCRestorePending[key] ~= nil
+        or RuntimeNPCModeCombatMonitor[key] ~= nil then
+        return true
+    end
+    if RuntimeReleaseInProgress[key] ~= nil or RuntimeReleaseOwner[key] ~= nil then
+        return true
+    end
+    if ManualTargetOrders.focusTarget == key
+        or (ManualTargetOrders.ignoreTargets and ManualTargetOrders.ignoreTargets[key] == true) then
+        return true
+    end
+    if UTACSpellPolicy and type(UTACSpellPolicy.HasStateForCharacter) == "function"
+        and UTACSpellPolicy.HasStateForCharacter(key) then
+        return true
+    end
+    if HasStatusSafe(liveCharacter, "UTAC_IS_CONTROLLED") or HasStatusSafe(key, "UTAC_IS_CONTROLLED") then
+        return true
+    end
+    if GetBaseStatusForCharacter(key) ~= nil then
+        return true
+    end
+
+    for _, status in pairs(Config.CombatStatusMap or {}) do
+        if HasStatusSafe(liveCharacter, status) or HasStatusSafe(key, status) then
+            return true
+        end
+    end
+    for _, status in pairs(Config.CombatStatusNPCMap or {}) do
+        if HasStatusSafe(liveCharacter, status) or HasStatusSafe(key, status) then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function ClearTargetPriorityStatuses(character)
     for _, status in ipairs(TARGET_PRIORITY_STATUSES) do
         RemoveStatusIfPresent(character, status)
@@ -2225,7 +2546,8 @@ local function RegisterManualTargetOrder(caster, target, orderType)
         ManualTargetOrders.focusTarget = targetKey
         ManualTargetOrders.ignoreTargets[targetKey] = nil
         RemoveStatusIfPresent(targetKey, "UTAC_IGNORE_TARGET")
-        Osi.ApplyStatus(targetKey, "UTAC_FOCUS_TARGET", 6, 1)
+        -- Short real-time durations can expire before the ordered AI actor gets a turn.
+        Osi.ApplyStatus(targetKey, "UTAC_FOCUS_TARGET", -1, 1)
         InfoPrint(string.format("Manual target order: global focus target=%s caster=%s", tostring(targetKey), tostring(caster)))
     elseif orderType == "ignore" then
         if ManualTargetOrders.focusTarget == targetKey then
@@ -2234,7 +2556,8 @@ local function RegisterManualTargetOrder(caster, target, orderType)
 
         ManualTargetOrders.ignoreTargets[targetKey] = true
         RemoveStatusIfPresent(targetKey, "UTAC_FOCUS_TARGET")
-        Osi.ApplyStatus(targetKey, "UTAC_IGNORE_TARGET", 6, 1)
+        -- Short real-time durations can expire before the ordered AI actor gets a turn.
+        Osi.ApplyStatus(targetKey, "UTAC_IGNORE_TARGET", -1, 1)
         InfoPrint(string.format("Manual target order: global ignore target=%s caster=%s", tostring(targetKey), tostring(caster)))
     end
 
@@ -2993,15 +3316,41 @@ UTACSettings.RegisterHook("MCM_AutoSummonExclusionList", function(newValue, oldV
     InfoPrint("Settings apply: summon auto-apply exclusions synced.")
 end)
 
-local function RegisterSpellPolicySettingHook(settingId)
+UTACSpellPolicyRefreshRuntime = UTACSpellPolicyRefreshRuntime or {
+    token = 0,
+    queued = false,
+    resyncTracked = false,
+    reasons = {},
+    reasonSet = {},
+    debounceMs = 750,
+    settledRetryMs = 2000,
+    inProgress = false,
+}
+
+function UTACSpellPolicyRefreshRuntime.IsStartupSource(source)
+    local sourceText = tostring(source or "")
+    return sourceText:find("StatsLoaded", 1, true) ~= nil
+        or sourceText:find("SessionLoaded", 1, true) ~= nil
+        or sourceText:find("LevelGameplayStarted", 1, true) ~= nil
+        or sourceText:find("module_load", 1, true) ~= nil
+        or sourceText:find("initialize", 1, true) ~= nil
+        or sourceText:find("delayed", 1, true) ~= nil
+end
+
+function UTACSpellPolicyRefreshRuntime.RegisterSettingHook(settingId)
     UTACSettings.RegisterHook(settingId, function(newValue, oldValue, context)
         if newValue == oldValue then return end
+        if UTACSpellPolicyRefreshRuntime.inProgress == true then return end
 
         local source = string.format("%s via %s", tostring(settingId), tostring((context and context.source) or "unknown"))
-        UTACSpellPolicy.RefreshSettings(source)
-        ResyncTrackedCharactersForSetting(settingId, function(key)
-            SyncUTACSpellPolicyForCharacter(key, source)
-        end)
+        if UTACSpellPolicyRefreshRuntime.IsStartupSource(context and context.source) and type(UTACSpellPolicyRefreshRuntime.Schedule) == "function" then
+            UTACSpellPolicyRefreshRuntime.Schedule(source, true)
+        else
+            UTACSpellPolicy.RefreshSettings(source)
+            ResyncTrackedCharactersForSetting(settingId, function(key)
+                SyncUTACSpellPolicyForCharacter(key, source)
+            end)
+        end
 
         InfoPrint(string.format(
             "Settings apply: %s changed via %s; spell policy/slot limiter synced.",
@@ -3011,11 +3360,86 @@ local function RegisterSpellPolicySettingHook(settingId)
     end)
 end
 
-RegisterSpellPolicySettingHook("MCM_EnableUTACSpellPolicy")
-RegisterSpellPolicySettingHook("MCM_UTACBlockedSpellList")
-RegisterSpellPolicySettingHook("MCM_EnableSpellSlotLimiter")
-RegisterSpellPolicySettingHook("MCM_SpellSlotLimiter_MinLevel")
-RegisterSpellPolicySettingHook("MCM_SpellSlotLimiter_AllowEnemiesAtLeast")
+UTACSpellPolicyRefreshRuntime.RegisterSettingHook("MCM_EnableUTACSpellPolicy")
+UTACSpellPolicyRefreshRuntime.RegisterSettingHook("MCM_UTACBlockedSpellList")
+UTACSpellPolicyRefreshRuntime.RegisterSettingHook("MCM_EnableSpellSlotLimiter")
+UTACSpellPolicyRefreshRuntime.RegisterSettingHook("MCM_SpellSlotLimiter_MinLevel")
+UTACSpellPolicyRefreshRuntime.RegisterSettingHook("MCM_SpellSlotLimiter_AllowEnemiesAtLeast")
+
+function UTACSpellPolicyRefreshRuntime.Refresh(reason, resyncTracked)
+    local source = tostring(reason or "spell policy refresh")
+    UTACSpellPolicyRefreshRuntime.inProgress = true
+    local ok, err = pcall(function()
+        UTACSettings.RefreshFromMCM({ source = source })
+    end)
+    UTACSpellPolicyRefreshRuntime.inProgress = false
+    if not ok then
+        error(err)
+    end
+    UTACSpellPolicy.RefreshSettings(source)
+
+    if resyncTracked == true and IsModEnabled() and Osi and type(Osi.Exists) == "function" then
+        ResyncTrackedCharactersForSetting(source, function(key)
+            SyncUTACSpellPolicyForCharacter(key, source)
+        end)
+    end
+end
+
+function UTACSpellPolicyRefreshRuntime.AddReason(reason)
+    local source = tostring(reason or "spell policy scheduled refresh")
+    if UTACSpellPolicyRefreshRuntime.reasonSet[source] then
+        return
+    end
+    UTACSpellPolicyRefreshRuntime.reasonSet[source] = true
+    table.insert(UTACSpellPolicyRefreshRuntime.reasons, source)
+end
+
+function UTACSpellPolicyRefreshRuntime.DrainReasons()
+    local reasons = UTACSpellPolicyRefreshRuntime.reasons
+    UTACSpellPolicyRefreshRuntime.reasons = {}
+    UTACSpellPolicyRefreshRuntime.reasonSet = {}
+    if #reasons == 0 then
+        return "spell policy scheduled refresh"
+    end
+    return table.concat(reasons, "; ")
+end
+
+UTACSpellPolicyRefreshRuntime.Schedule = function(reason, resyncTracked)
+    UTACSpellPolicyRefreshRuntime.AddReason(reason)
+    UTACSpellPolicyRefreshRuntime.resyncTracked = UTACSpellPolicyRefreshRuntime.resyncTracked or resyncTracked ~= false
+    UTACSpellPolicyRefreshRuntime.queued = true
+    UTACSpellPolicyRefreshRuntime.token = UTACSpellPolicyRefreshRuntime.token + 1
+
+    local token = UTACSpellPolicyRefreshRuntime.token
+    if not (Ext and Ext.Timer and type(Ext.Timer.WaitFor) == "function") then
+        local source = UTACSpellPolicyRefreshRuntime.DrainReasons()
+        local shouldResync = UTACSpellPolicyRefreshRuntime.resyncTracked
+        UTACSpellPolicyRefreshRuntime.queued = false
+        UTACSpellPolicyRefreshRuntime.resyncTracked = false
+        UTACSpellPolicyRefreshRuntime.Refresh(source, shouldResync)
+        return
+    end
+
+    Ext.Timer.WaitFor(UTACSpellPolicyRefreshRuntime.debounceMs, function()
+        if token ~= UTACSpellPolicyRefreshRuntime.token then
+            return
+        end
+
+        local source = UTACSpellPolicyRefreshRuntime.DrainReasons()
+        local shouldResync = UTACSpellPolicyRefreshRuntime.resyncTracked
+        UTACSpellPolicyRefreshRuntime.queued = false
+        UTACSpellPolicyRefreshRuntime.resyncTracked = false
+        UTACSpellPolicyRefreshRuntime.Refresh(source, shouldResync)
+
+        local retryToken = UTACSpellPolicyRefreshRuntime.token
+        Ext.Timer.WaitFor(UTACSpellPolicyRefreshRuntime.settledRetryMs, function()
+            if UTACSpellPolicyRefreshRuntime.queued == true or retryToken ~= UTACSpellPolicyRefreshRuntime.token then
+                return
+            end
+            UTACSpellPolicyRefreshRuntime.Refresh("settled retry after " .. source, shouldResync)
+        end)
+    end)
+end
 
 UTACSpellPolicy.Initialize({
     ModuleUUID = ModuleUUID,
@@ -3025,6 +3449,9 @@ UTACSpellPolicy.Initialize({
     GetMCM_Bool = GetMCM_Bool,
     GetMCM_Number = GetMCM_Number,
     HasStatusSafe = HasStatusSafe,
+    IsUTACControlled = function(character)
+        return IsUTACControlledForOptionalHelper(character, CC_Normalize(character)) == true
+    end,
     ApplyStatusIfMissing = ApplyStatusIfMissing,
     RemoveStatusIfPresent = RemoveStatusIfPresent,
     CC_Normalize = CC_Normalize,
@@ -3036,13 +3463,19 @@ UTACSpellPolicy.Initialize({
 UTACSettings.Initialize({ source = "module_load" })
 RefreshTrackedSpellResources()
 ResyncAutoSummonExclusions("module_load")
-UTACSpellPolicy.RefreshSettings("module_load")
+UTACSpellPolicyRefreshRuntime.Schedule("module_load", true)
 InfoPrint("SCRIPT LOADED. Build=" .. BUILD_TAG)
+
+if Ext.Events and Ext.Events.StatsLoaded then
+    Ext.Events.StatsLoaded:Subscribe(function()
+        UTACSpellPolicyRefreshRuntime.Schedule("StatsLoaded")
+    end)
+end
 
 Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(_, _)
     UTACSettings.RefreshFromMCM({ source = "LevelGameplayStarted" })
     ResyncAutoSummonExclusions("LevelGameplayStarted")
-    UTACSpellPolicy.RefreshSettings("LevelGameplayStarted")
+    UTACSpellPolicyRefreshRuntime.Schedule("LevelGameplayStarted", true)
     if not IsModEnabled() then
         return
     end
@@ -3055,6 +3488,7 @@ end)
 
 Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(character, status, causee, _)
     if not IsModEnabled() then return end
+    UTACSpellPolicy.OnStatusApplied(character, status, causee)
     local key = RememberCharacterHandle(character)
     if not key then return end
     local liveCharacter = RuntimeCharacterByKey[key] or character
@@ -3066,6 +3500,12 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(character, sta
             return
         end
         RuntimeProcessedStatusApplied[processedKey] = true
+    end
+
+    if (status == "UTAC_TOGGLE_IS_NPC" or status == "UTAC_REAPPLY_NPC" or status == "UTAC_REAPPLY_NPC_NEEDED")
+        and IsHostOrPlayerCharacter(liveCharacter) then
+        ClearHostPlayerNPCModeState(liveCharacter, "blocked host/player NPC Mode status " .. tostring(status))
+        return
     end
 
     if status == "UTAC_IS_CONTROLLED" then
@@ -3086,12 +3526,16 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(character, sta
             UTAC_ModifySpells(liveCharacter, true)
             ApplyStatusIfMissing(liveCharacter, "UTAC_AVOID_DANGER", -1)
             ApplyStatusIfMissing(liveCharacter, "AI_TRAP_AWARENESS", -1)
-            pcall(function()
-                if Osi.HasPassive(liveCharacter, "UTAC_ToggleNPC") == 0 then
-                    Osi.AddPassive(liveCharacter, "UTAC_ToggleNPC")
-                    InfoPrint("Granted UTAC_ToggleNPC passive to " .. tostring(key))
-                end
-            end)
+            if IsHostOrPlayerCharacter(liveCharacter) or IsHostOrPlayerCharacter(key) then
+                ClearHostPlayerNPCModeState(liveCharacter, "StatusApplied UTAC_IS_CONTROLLED")
+            else
+                pcall(function()
+                    if Osi.HasPassive(liveCharacter, "UTAC_ToggleNPC") == 0 then
+                        Osi.AddPassive(liveCharacter, "UTAC_ToggleNPC")
+                        InfoPrint("Granted UTAC_ToggleNPC passive to " .. tostring(key))
+                    end
+                end)
+            end
         end
         SyncShadowCurseProtectionForCharacter(liveCharacter, GetMCM_Bool("MCM_EnableShadowCurseProtection", false))
         SyncSculptSpellsHelperForCharacter(liveCharacter, GetMCM_Bool("MCM_EnableSculptSpellsHelper", false))
@@ -3112,6 +3556,13 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(character, sta
         SyncShadowCurseProtectionForCharacter(liveCharacter, GetMCM_Bool("MCM_EnableShadowCurseProtection", false))
         SyncSculptSpellsHelperForCharacter(liveCharacter, GetMCM_Bool("MCM_EnableSculptSpellsHelper", false))
         SyncUTACSpellPolicyForCharacter(liveCharacter, "StatusApplied " .. tostring(status))
+        if IsInCombatSafe(liveCharacter) then
+            Ext.Timer.WaitFor(100, function()
+                if IsModEnabled() and key and _G.UTAC_Companions and _G.UTAC_Companions[key] then
+                    ApplyCombatStatus(liveCharacter)
+                end
+            end)
+        end
     end
 end)
 
@@ -3134,6 +3585,9 @@ Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(character, sta
     end
 
     if status == "UTAC_TOGGLE_IS_NPC" then
+        if IsHostOrPlayerCharacter(character) or IsHostOrPlayerCharacter(key) then
+            return
+        end
         if not RuntimeReleaseInProgress[key] and Osi.Exists(key) == 1 then
             RemoveStatusIfPresent(key, "UTAC_REAPPLY_NPC_NEEDED")
             RemoveStatusIfPresent(key, "UTAC_REAPPLY_NPC")
@@ -3154,7 +3608,7 @@ Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(character, sta
     end
 
     if Config.IsNPCCombatStatus(status) then
-        if not RuntimeReleaseInProgress[key] and Osi.Exists(key) == 1 then
+        if not (IsHostOrPlayerCharacter(character) or IsHostOrPlayerCharacter(key)) and not RuntimeReleaseInProgress[key] and Osi.Exists(key) == 1 then
             Osi.MakePlayer(character)
             InfoPrint("MakePlayer called for " .. tostring(character) .. " (NPC combat status '" .. status .. "' removed)")
         end
@@ -3218,7 +3672,9 @@ Ext.Osiris.RegisterListener("EnteredCombat", 2, "after", function(character, com
         return
     end
 
-    TryAutoApplySummonAI(character, "EnteredCombat")
+    if ShouldInspectAutoSummonCandidate(character, "EnteredCombat") then
+        TryAutoApplySummonAI(character, "EnteredCombat")
+    end
 
     local charKey = RememberCharacterHandle(character)
     if (charKey and _G.UTAC_Companions[charKey]) or Osi.HasActiveStatus(character, "UTAC_IS_CONTROLLED") == 1 then
@@ -3226,6 +3682,7 @@ Ext.Osiris.RegisterListener("EnteredCombat", 2, "after", function(character, com
             _G.UTAC_Companions[charKey] = true
             InfoPrint("Restored missing companion: " .. tostring(charKey))
         end
+        SyncUTACSpellPolicyForCharacter(character, "EnteredCombat immediate")
         Ext.Timer.WaitFor(100, function()
             ApplyCombatStatus(character)
         end)
@@ -3253,6 +3710,7 @@ Ext.Osiris.RegisterListener("CombatEnded", 1, "after", function(combatGuid)
             RuntimeAutoSummonCombat[key] = nil
         end
     end
+    UTACSpellPolicy.RestoreTurnScopedCanNotUse("CombatEnded " .. tostring(combatGuid))
     UTACSpellPolicy.ClearNonCombat("CombatEnded " .. tostring(combatGuid))
 end)
 
@@ -3261,6 +3719,9 @@ Ext.Osiris.RegisterListener("LeftCombat", 2, "after", function(character, _)
 
     local key = RememberCharacterHandle(character)
     if not key then return end
+    if not HasAnyUTACRuntimeState(key, character) then
+        return
+    end
     RuntimeAutoSummonCombat[key] = nil
     UTACSpellPolicy.ClearForCharacter(key, "LeftCombat")
     SyncCombatBlockStatuses(key)
@@ -3291,13 +3752,18 @@ end)
 Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(character)
     if not IsModEnabled() then return end
     local cKey = RememberCharacterHandle(character)
+    UTACSpellPolicy.RestoreTurnScopedCanNotUseForDifferentOwner(character, "TurnStarted")
     if not cKey or not _G.UTAC_Companions[cKey] or Osi.IsInCombat(character) ~= 1 then return end
 
     -- Safeguard: Check if character should have combat status but doesn't (e.g., lost control during dialogue or after revival)
     local hasBaseStatus = false
     local hasCombatStatus = false
     local foundBaseStatus = nil
-    local isNPCMode = Osi.HasActiveStatus(character, "UTAC_TOGGLE_IS_NPC") == 1
+    local isHostPlayer = IsHostOrPlayerCharacter(character) or IsHostOrPlayerCharacter(cKey)
+    if isHostPlayer then
+        ClearHostPlayerNPCModeState(character, "TurnStarted")
+    end
+    local isNPCMode = (not isHostPlayer) and Osi.HasActiveStatus(character, "UTAC_TOGGLE_IS_NPC") == 1
 
     for baseStatus, combatStatus in pairs(Config.CombatStatusMap) do
         if HasStatusSafe(character, baseStatus) or HasStatusSafe(cKey, baseStatus) then
@@ -3390,6 +3856,7 @@ Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(character)
         UpdateTargetPriorities(character, enemies)
         local casterResource = GetAvailableCasterResource(character)
         UTACSpellPolicy.SyncForCharacter(character, archetype, combatState, casterResource, "TurnStarted")
+        UTACSpellPolicy.ApplyTurnScopedCanNotUse(character, "TurnStarted")
         ManageCombatTactics(character, archetype, combatState, casterResource)
 
         local resourceLabel = "none"
@@ -3405,7 +3872,7 @@ Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(character)
 
         local healerMode = "n/a"
         if archetype == "Support_Healer" then
-            healerMode = (healerUrgent == true) and "urgent" or "nonurgent"
+            healerMode = (healerUrgent == true) and "urgent" or "standard"
         end
         if archetype == "Support_Healer" then
             local function boolLabel(value)
@@ -3498,16 +3965,28 @@ Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(character)
     end
 end)
 
+Ext.Osiris.RegisterListener("TurnEnded", 1, "after", function(character)
+    UTACSpellPolicy.RestoreTurnScopedCanNotUseIfOwner(character, "TurnEnded")
+end)
+
 local RALLY_MAX_DISTANCE = nil
 
 Ext.Osiris.RegisterListener("UsingSpell", 5, "before", function(caster, spellId, _, _, _)
     if not IsModEnabled() then return end
     LogThrowSpellDiagnostic(caster, spellId)
+    UTACSpellPolicy.ObserveSpell(caster, spellId, "UsingSpell before")
     UTACSpellPolicy.OnUsingSpell(caster, spellId)
+end)
+
+Ext.Osiris.RegisterListener("UsingSpell", 5, "after", function(caster, spellId, _, _, _)
+    if not IsModEnabled() then return end
+    UTACSpellPolicy.OnUsingSpellAfter(caster, spellId)
+    UTACSpellPolicy.ObserveSpell(caster, spellId, "UsingSpell after")
 end)
 
 Ext.Osiris.RegisterListener("UsingSpellAtPosition", 8, "after", function(caster, x, y, z, spell, _, _, _)
     if not IsModEnabled() then return end
+    UTACSpellPolicy.ObserveSpell(caster, spell, "UsingSpellAtPosition after", string.format("pos=%s,%s,%s", tostring(x), tostring(y), tostring(z)))
     if spell ~= "Shout_UTAC_Rally" then return end
     if Osi.IsInCombat and Osi.IsInCombat(caster) == 1 then return end
 
@@ -3538,6 +4017,7 @@ end)
 
 Ext.Osiris.RegisterListener("UsingSpellOnTarget", 6, "after", function(caster, target, spell, _, _, _)
     if not IsModEnabled() then return end
+    UTACSpellPolicy.ObserveSpell(caster, spell, "UsingSpellOnTarget after", "target=" .. tostring(target))
 
     if spell == "Target_UTAC_FocusTarget" then
         RegisterManualTargetOrder(caster, target, "focus")
@@ -3679,7 +4159,7 @@ end)
 Ext.Events.SessionLoaded:Subscribe(function()
     MigratePersistentVarsSnapshot()
     UTACSettings.RefreshFromMCM({ source = "SessionLoaded" })
-    UTACSpellPolicy.RefreshSettings("SessionLoaded")
+    UTACSpellPolicyRefreshRuntime.Schedule("SessionLoaded", true)
     if not IsModEnabled() then
         InfoPrint("SessionLoaded: UTAC is disabled via MCM_EnableMod; skipping companion rebuild.")
         return

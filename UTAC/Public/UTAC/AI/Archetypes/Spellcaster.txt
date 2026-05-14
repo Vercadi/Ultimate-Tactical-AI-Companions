@@ -1,4 +1,4 @@
-﻿USING base
+USING base
 
 // GLASS CANNON MAGE
 MULTIPLIER_DAMAGE_ENEMY_POS                  6.0
@@ -16,10 +16,14 @@ MULTIPLIER_FALLBACK_ENEMIES_NEARBY          -0.2
 MULTIPLIER_DAMAGE_MULTI_TARGET_POS           3.0
 MULTIPLIER_AOE_DAMAGE_POS                    2.5
 MULTIPLIER_DAMAGE_ALLY_NEG                   8.0
+MULTIPLIER_DAMAGE_NEUTRAL_NEG                8.0
 MULTIPLIER_DAMAGE_SELF_NEG                   20.0
 MULTIPLIER_BOOST_ENEMY_POS                   3.0
 MULTIPLIER_DOT_ENEMY_POS                     3.0
+MULTIPLIER_DOT_NEUTRAL_NEG                   8.0
 MULTIPLIER_CONTROL_ENEMY_POS                 2.5
+MULTIPLIER_CONTROL_NEUTRAL_POS               0.0
+MULTIPLIER_CONTROL_NEUTRAL_NEG               8.0
 MULTIPLIER_IMMUNITY_STUPIDITY                0.0
 
 // Spell priority
@@ -35,14 +39,14 @@ WEAPON_PICKUP_MODIFIER                       0.0
 MULTIPLIER_TARGET_MY_ENEMY                   1.5
 MODIFIER_SEEK_MINIMAL_THRESHOLD              0.5
 
-MULTIPLIER_TARGET_PREFERRED                  10.0
+MULTIPLIER_TARGET_PREFERRED                  25.0
 MULTIPLIER_TARGET_UNPREFERRED                0.05
 
 MULTIPLIER_BLIND                             0.5
 MULTIPLIER_INCAPACITATE                      1.5
 MULTIPLIER_USABLE_ITEM                       0.0
 MULTIPLIER_REFLECT_DAMAGE                    0.1
-MULTIPLIER_SCORE_ON_NEUTRAL                  0.5
+MULTIPLIER_SCORE_ON_NEUTRAL                 -1.1
 
 // Discourage shoving (AI wastes actions shoving dead bodies)
 MULTIPLIER_SHOVE_ENEMY_POS                   0.0

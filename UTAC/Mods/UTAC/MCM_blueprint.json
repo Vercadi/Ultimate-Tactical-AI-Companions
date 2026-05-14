@@ -173,7 +173,7 @@
               "Name": "Use editable spell block list",
               "Type": "checkbox",
               "Default": false,
-              "Description": "Enables the editable blocked-spell list below. Add, remove, or disable spell IDs there to control which utility spells UTAC AI should avoid in combat.",
+              "Description": "Enables the editable blocked-spell list below. Add, remove, or disable spell IDs there to control which utility spells UTAC AI is blocked from using in combat.",
               "Handles": { "NameHandle": "h7fac0100g0000g4000g8000g000000000032", "DescriptionHandle": "h7fac0100g0000g4000g8000g000000000033" }
             },
             {

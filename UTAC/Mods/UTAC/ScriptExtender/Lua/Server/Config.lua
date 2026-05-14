@@ -78,25 +78,17 @@ Config.UTAC_SpellMappings = {
 }
 
 -- === Healer presets (values only; UTACSettings.lua is the runtime owner) ===
+-- Keep resource-management checkboxes user-owned; presets should not toggle them in MCM.
 Config.PRESETS = {
     [0] = { name = "Default", values = nil },
     [1] = { name = "Defensive Healer", values = {
         Healer_TriageThreshold = 70,
-        ConserveHighSlots = true,
-        ConserveHighSlots_MinLevel = 3,
-        ConserveHighSlots_AllowEnemiesAtLeast = 2,
     }},
     [2] = { name = "Proactive Healer", values = {
         Healer_TriageThreshold = 55,
-        ConserveHighSlots = false,
-        ConserveHighSlots_MinLevel = 3,
-        ConserveHighSlots_AllowEnemiesAtLeast = 1,
     }},
     [3] = { name = "Battle Cleric", values = {
         Healer_TriageThreshold = 45,
-        ConserveHighSlots = false,
-        ConserveHighSlots_MinLevel = 2,
-        ConserveHighSlots_AllowEnemiesAtLeast = 0,
     }},
 }
 
