@@ -202,7 +202,7 @@ All notable changes to Ultimate Tactical AI Companions (UTAC) are recorded here.
 - **Mechanical assistance tuning** - Down-tuned archetype/helper buffs and set emergency spell slot restoration default to `0` so the default mod remains AI control, not hidden power scaling.
 
 ### MCM audit
-- **MCM_AUDIT.md** added in `UTAC Docs`: audit of MCM settings for UX, sync, and co-op safety; prioritized recommendations (preset-on-change, host-only note, event filtering, optional dropdown/localization).
+- Added private MCM audit notes for UX, sync, and co-op safety; prioritized recommendations included preset-on-change, host-only notes, event filtering, and optional dropdown/localization work.
 
 ### MCM improvements (P1â€“P3)
 - **P1:** Preset applies when user changes Archetype preset in MCM (`MCM_Setting_Saved` for `ArchetypePresetIndex`); preset also writes to `MCM.Set()` so UI and store stay in sync; README documents co-op (host's MCM only) and MCM JSON storage.
