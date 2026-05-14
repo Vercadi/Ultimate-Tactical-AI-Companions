@@ -28,13 +28,13 @@ All notable changes to Ultimate Tactical AI Companions (UTAC) are recorded here.
 
 ### Added
 - Implemented `1.0.4` as an MCM localization-only patch: all current MCM tabs, sections, setting names, and setting descriptions now have localization handles with English XML entries.
-- Added translator-facing notes in `UTAC Docs/TRANSLATORS.md`.
+- Added translator-facing notes for external translation patches.
 
 ### Documentation
 - Added combined implementation plan for MCM localization, Sculpt Spells, and strict role helpers.
-- Added `UTAC Docs/ROADMAP.md` as the high-level tracker for shipped work, upcoming releases, and deferred compatibility items.
+- Added private roadmap tracking for shipped work, upcoming releases, and deferred compatibility items.
 
-## [1.1.2.5] - 2026-05-11
+## [1.1.2.6] - 2026-05-14
 
 ### Fixed
 - Fixed the UTAC Spell Policy block list failing to prevent some blocked spells, especially in NPC Mode.
@@ -45,7 +45,7 @@ All notable changes to Ultimate Tactical AI Companions (UTAC) are recorded here.
 - Removed the Support Healer nonurgent General AI override path so Healer stays on the healer archetype at all times.
 - Increased Support Healer ally-heal weighting, low-HP target bias, downed-ally pressure, and neutral/story NPC support safety.
 - Tuned Protector toward bodyguard behavior: stronger ally positioning, ally buffs, downed-ally rescue pressure, and lower priority than Healer for pure triage healing.
-- Updated BG3MM metadata version to `1.1.2.5`.
+- Updated BG3MM metadata version to `1.1.2.6`.
 
 ### Notes
 - Spell Policy remains optional and default off.
@@ -167,9 +167,9 @@ All notable changes to Ultimate Tactical AI Companions (UTAC) are recorded here.
 ## [1.0.0] - 2026-04-25
 
 ### Added
-- **Changelog** â€” This file in `UTAC Docs` for all changes.
-- **CRITICAL_FIXES_PLAN.md** â€” Step-by-step plan for Critical audit items (in `UTAC Docs`).
-- **Targeted runtime checklist** - Added `UTAC Docs/Audit/TARGETED_RUNTIME_CHECKLIST_2026-04-25.md` for the remaining BG3-only trap, surface, iterator, target-order, helper, and vanilla-action checks.
+- **Changelog** â€” Added the public release changelog.
+- **Critical fixes plan** â€” Added private planning notes for the first stabilization pass.
+- **Targeted runtime checklist** - Added private runtime validation notes for the remaining BG3-only trap, surface, iterator, target-order, helper, and vanilla-action checks.
 
 ### Fixed (Critical)
 - **Durable state** - Replaced live `PersistentVars` dependency for disabled assignment snapshots with registered ModVars, kept post-heal state runtime-only, and added legacy snapshot migration.
@@ -211,7 +211,7 @@ All notable changes to Ultimate Tactical AI Companions (UTAC) are recorded here.
 - Preset application removed from TurnStarted (only LevelGameplayStarted and MCM_Setting_Saved now).
 
 ### Documentation (2.4)
-- **README.md** now lives in `UTAC Docs/`: requirements (BG3, Script Extender, MCM), note that RequiredVersion 9 is minimum and SE is often higher (e.g. 30), mod version 1.0.
+- **README.md** documents requirements (BG3, Script Extender, MCM), note that RequiredVersion 9 is minimum and SE is often higher (e.g. 30), mod version 1.0.
 - **AIArchetypeManager.lua** header comment: requires Script Extender (Config RequiredVersion min 9), mod version 1.0 (meta.lsx).
 - **Validation against BG3 Search** - confirmed `RestoreResource(SpellSlot,1,1)` syntax is used in vanilla data, and confirmed `Spell_Prepare_Buff_BlessingOfTheTickster_L1to3` / `_Loop` are valid prepare sound IDs while cast/impact use `...Trickster...`.
 

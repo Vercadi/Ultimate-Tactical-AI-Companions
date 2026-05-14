@@ -67,8 +67,6 @@ Please include:
 
 - `UTAC/` - BG3 mod source folder.
 - `CHANGELOG.md` - public release changelog.
-- `ROADMAP.md` - public roadmap and planned work.
-- `TRANSLATORS.md` - notes for translation patch authors.
 
 Package archives, build outputs, logs, and internal planning notes are intentionally not tracked in this public repository.
 
@@ -78,7 +76,7 @@ Package archives, build outputs, logs, and internal planning notes are intention
 - Short name: `UTAC`
 - Module folder: `UTAC`
 - Module UUID: `300fb883-8af8-4be9-a101-171b56698dc5`
-- Version: `1.1.2.5`
+- Version: `1.1.2.6`
 
 ## License
 
