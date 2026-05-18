@@ -16,6 +16,9 @@ Config.CombatStatusMap = {
     ["UTAC_SUMMON"]         = "UTAC_SUMMON_COMBAT",
     ["UTAC_AOE_SPECIALIST"] = "UTAC_AOE_SPECIALIST_COMBAT",
     ["UTAC_SPELLCASTER"]    = "UTAC_SPELLCASTER_COMBAT",
+    ["UTAC_UNARMED"]        = "UTAC_UNARMED_COMBAT",
+    ["UTAC_PRIMAL_DRUID"]   = "UTAC_PRIMAL_DRUID_COMBAT",
+    ["UTAC_SUMMONER"]       = "UTAC_SUMMONER_COMBAT",
 }
 
 -- NPC-mode combat status variants (no LoseControl, used with MakeNPC)
@@ -30,6 +33,9 @@ Config.CombatStatusNPCMap = {
     ["UTAC_SUMMON"]         = "UTAC_SUMMON_COMBAT_NPC",
     ["UTAC_AOE_SPECIALIST"] = "UTAC_AOE_SPECIALIST_COMBAT_NPC",
     ["UTAC_SPELLCASTER"]    = "UTAC_SPELLCASTER_COMBAT_NPC",
+    ["UTAC_UNARMED"]        = "UTAC_UNARMED_COMBAT_NPC",
+    ["UTAC_PRIMAL_DRUID"]   = "UTAC_PRIMAL_DRUID_COMBAT_NPC",
+    ["UTAC_SUMMONER"]       = "UTAC_SUMMONER_COMBAT_NPC",
 }
 
 Config.NPCStatusSet = {}
@@ -53,6 +59,9 @@ Config.StatusToArchetype = {
     UTAC_PROTECTOR      = { Arch = "Protector",         Helpers = { "AI_PROTECTOR_GUARDIAN" } },
     UTAC_AOE_SPECIALIST = { Arch = "AoE_Specialist",    Helpers = { "AI_AOE_DEVASTATOR" } },
     UTAC_SPELLCASTER    = { Arch = "Spellcaster",       Helpers = { "AI_SPELLCASTER_FOCUS" } },
+    UTAC_UNARMED        = { Arch = "Unarmed" },
+    UTAC_PRIMAL_DRUID   = { Arch = "Primal_Druid" },
+    UTAC_SUMMONER       = { Arch = "Summoner" },
     UTAC_GENERAL        = { Arch = "General_AI",        Helpers = { "AI_GENERAL_ADAPTIVE" } },
     UTAC_SUMMON         = { Arch = "Summon_AI" },
 }
@@ -73,8 +82,11 @@ Config.AllPermanentHelpers = {
 
 -- === AI-only spell variants ===
 Config.UTAC_SpellMappings = {
-    Shout_Dash             = "Shout_UTAC_Dash_AI",
-    Shout_Dash_BonusAction = "Shout_UTAC_Dash_BonusAction_AI",
+    { Source = "Shout_Dash", Helper = "Shout_UTAC_Dash_AI" },
+    { Source = "Shout_Dash_BonusAction", Helper = "Shout_UTAC_Dash_BonusAction_AI" },
+    { Source = "Shout_ActionSurge", Helper = "Shout_UTAC_ActionSurge_AI" },
+    { Source = "Shout_Dash_CunningAction", Helper = "Shout_UTAC_Dash_CunningAction_AI" },
+    { Source = "Shout_WildShape_Combat", Helper = "Shout_UTAC_WildShape_Combat_AI", RequireBaseStatus = "UTAC_PRIMAL_DRUID" },
 }
 
 -- === Healer presets (values only; UTACSettings.lua is the runtime owner) ===

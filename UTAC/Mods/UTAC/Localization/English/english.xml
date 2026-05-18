@@ -153,4 +153,10 @@
 <content contentuid="h7fac0100g0000g4000g8000g000000000041" version="1">Advanced: editable root/template UUID list for summons UTAC should not auto-control. Use this for utility summons such as Pack Rats. Runtime spawned character UUIDs usually change and should not be used. Manual archetype assignment still works.</content>
 <content contentuid="h7fac0100g0000g4000g8000g000000000042" version="1">Block Jump for UTAC allies</content>
 <content contentuid="h7fac0100g0000g4000g8000g000000000043" version="1">Blocks normal AI Jump for UTAC-controlled allies in combat. Useful if companions make unsafe vertical jumps, but may reduce mobility or pathing options.</content>
+<content contentuid="h11300001g0001g4000g8000g000000000001" version="1">Unarmed</content>
+<content contentuid="h11300001g0001g4000g8000g000000000002" version="1">Early unarmed/monk test role. Favors mobile melee pressure and avoids weapon pickup.</content>
+<content contentuid="h11300001g0001g4000g8000g000000000003" version="1">Primal Druid</content>
+<content contentuid="h11300001g0001g4000g8000g000000000004" version="1">Early druid caster test role. Favors support, control, safer zones, and concentration preservation.</content>
+<content contentuid="h11300001g0001g4000g8000g000000000005" version="1">Summoner</content>
+<content contentuid="h11300001g0001g4000g8000g000000000006" version="1">Early summoner/conjurer test role. Supports existing summons and battlefield control, but does not force summon spell usage.</content>
 </contentList>

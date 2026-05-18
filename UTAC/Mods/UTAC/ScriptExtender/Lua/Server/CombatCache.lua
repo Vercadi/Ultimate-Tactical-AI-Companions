@@ -223,11 +223,11 @@ local function AddDBCombatParticipants(character, addParticipant)
 end
 
 -- Osiris: combat tracking
-Ext.Osiris.RegisterListener("EnteredCombat", 2, "after", function(char, combatGuid)
+_G.UTAC_RegisterOsirisListener("EnteredCombat", 2, "after", function(char, combatGuid)
     CC_Add(char, combatGuid or ("CG_" .. tostring(char)))
 end)
 
-Ext.Osiris.RegisterListener("LeftCombat", 2, "after", function(char, _)
+_G.UTAC_RegisterOsirisListener("LeftCombat", 2, "after", function(char, _)
     CC_Remove(char)
     local charKey = CC_Normalize(char)
     if charKey and _G.UTAC_Companions and _G.UTAC_Companions[charKey] and Osi.HasActiveStatus(charKey, "UTAC_TOGGLE_IS_NPC") == 1 then
@@ -245,7 +245,7 @@ Ext.Osiris.RegisterListener("LeftCombat", 2, "after", function(char, _)
     end
 end)
 
-Ext.Osiris.RegisterListener("Died", 1, "after", function(char)
+_G.UTAC_RegisterOsirisListener("Died", 1, "after", function(char)
     CC_Remove(char)
 end)
 

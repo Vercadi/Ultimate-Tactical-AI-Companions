@@ -1,17 +1,31 @@
 -- ||                      ULTIMATE TACTICAL AI COMPANIONS (UTAC)                 ||
 -- =================================================================================
 -- Requires: Norbyte BG3 Script Extender (see ScriptExtender/Config.json RequiredVersion; min 9).
--- Mod version: 1.1.2.5 (see meta.lsx Version64).
+-- Mod version: 1.1.3.0 (see meta.lsx Version64).
 -- =================================================================================
 
 local ModuleUUID = "300fb883-8af8-4be9-a101-171b56698dc5"
-local BUILD_TAG = "2026-05-11-spell-policy-turn-flags"
+local BUILD_TAG = "2026-05-16-113-archetypes-recovery"
 local NULL_UUID = "NULL_00000000-0000-0000-0000-000000000000"
 local UTACSettings = Ext.Require("Server/UTACSettings.lua")
 
 _G.UTAC_Companions = _G.UTAC_Companions or {}
 _G.UTAC_TransformedForDialog = {}
 _G.UTAC_BaseStatusByCharacter = _G.UTAC_BaseStatusByCharacter or {}
+if type(_G.UTAC_RegisterOsirisListener) ~= "function" then
+    _G.UTAC_RegisterOsirisListener = function(eventName, arity, timing, callback)
+        _G.UTAC_OsirisListenerQueue = _G.UTAC_OsirisListenerQueue or {
+            listeners = {},
+            registered = false,
+        }
+        table.insert(_G.UTAC_OsirisListenerQueue.listeners, {
+            eventName = eventName,
+            arity = arity,
+            timing = timing,
+            callback = callback,
+        })
+    end
+end
 
 local Config = Ext.Require("Server/Config.lua")
 local UTACSpellPolicy = Ext.Require("Server/UTACSpellPolicy.lua")
@@ -49,22 +63,67 @@ local function GetMCM_Number(id, default)
     return UTACSettings.GetNumber(id, default)
 end
 
+function _G.UTAC_StatsEntryExists(statId)
+    if not statId or not Ext or not Ext.Stats or type(Ext.Stats.Get) ~= "function" then
+        return false
+    end
+    local ok, stat = pcall(Ext.Stats.Get, statId)
+    return ok and stat ~= nil
+end
+
+function _G.UTAC_IterSpellMappings()
+    local mappings = Config.UTAC_SpellMappings or {}
+    local normalized = {}
+    for key, value in pairs(mappings) do
+        if type(value) == "table" then
+            table.insert(normalized, value)
+        elseif type(key) == "string" and type(value) == "string" then
+            table.insert(normalized, { Source = key, Helper = value })
+        end
+    end
+    return normalized
+end
+
+function _G.UTAC_CharacterHasActiveStatus(character, status)
+    if not character or not status or status == "" or type(Osi.HasActiveStatus) ~= "function" then
+        return false
+    end
+    local ok, result = pcall(Osi.HasActiveStatus, character, status)
+    return ok and result == 1
+end
+
 -- === UTAC: AI-only spell variants ===
 local function UTAC_ModifySpells(character, enable)
     if not character or character == "" then return end
     if type(Osi.HasSpell) ~= "function" or type(Osi.AddSpell) ~= "function" or type(Osi.RemoveSpell) ~= "function" then
         return
     end
+    local mappings = _G.UTAC_IterSpellMappings()
     if enable then
-        for baseId, aiId in pairs(Config.UTAC_SpellMappings) do
-            if Osi.HasSpell(character, baseId) == 1 and Osi.HasSpell(character, aiId) == 0 then
+        if type(Osi.IsInCombat) == "function" and Osi.IsInCombat(character) ~= 1 then
+            return
+        end
+        for _, mapping in ipairs(mappings) do
+            local sourceId = mapping.Source
+            local aiId = mapping.Helper
+            local canAdd = sourceId and aiId and _G.UTAC_StatsEntryExists(sourceId) and _G.UTAC_StatsEntryExists(aiId)
+            if canAdd and mapping.RequireBaseStatus and not _G.UTAC_CharacterHasActiveStatus(character, mapping.RequireBaseStatus) then
+                canAdd = false
+            end
+            if canAdd and mapping.SkipWhenStatus and _G.UTAC_CharacterHasActiveStatus(character, mapping.SkipWhenStatus) then
+                canAdd = false
+            end
+            if canAdd and Osi.HasSpell(character, sourceId) == 1 and Osi.HasSpell(character, aiId) == 0 then
                 Osi.AddSpell(character, aiId, 0, 1)
+                InfoPrint(string.format("AI helper spell added: actor=%s source=%s helper=%s reason=combat_control", tostring(character), tostring(sourceId), tostring(aiId)))
             end
         end
     else
-        for _, aiId in pairs(Config.UTAC_SpellMappings) do
-            if Osi.HasSpell(character, aiId) == 1 then
+        for _, mapping in ipairs(mappings) do
+            local aiId = mapping.Helper
+            if aiId and Osi.HasSpell(character, aiId) == 1 then
                 Osi.RemoveSpell(character, aiId)
+                InfoPrint(string.format("AI helper spell removed: actor=%s helper=%s reason=cleanup", tostring(character), tostring(aiId)))
             end
         end
     end
@@ -439,14 +498,14 @@ local function SyncShadowCurseProtectionForCharacter(character, enabled)
 end
 
 -- === Post-heal tracker (Osiris) ===
-if Ext and Ext.Osiris and Ext.Osiris.RegisterListener then
-    Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(target, status, causee, storyActionId)
+if type(_G.UTAC_RegisterOsirisListener) == "function" then
+    _G.UTAC_RegisterOsirisListener("StatusApplied", 4, "after", function(target, status, causee, storyActionId)
         local stype = Osi.GetStatusType(status)
         if stype == "HEAL" and causee and Osi.Exists(causee) == 1 then
             RuntimeJustHealed[tostring(causee)] = true
         end
     end)
-    Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(char)
+    _G.UTAC_RegisterOsirisListener("TurnStarted", 1, "after", function(char)
         if char then RuntimeJustHealed[tostring(char)] = nil end
     end)
 end
@@ -1740,6 +1799,15 @@ local function GetKnownSummonCandidates(seed)
     addDbRows(Osi.DB_PlayerSummons)
     addDbRows(Osi.DB_PartyFollowers)
 
+    for key, _ in pairs(RuntimeAutoSummonCombat or {}) do
+        add(key)
+    end
+    for key, baseStatus in pairs(_G.UTAC_BaseStatusByCharacter or {}) do
+        if baseStatus == AUTO_SUMMON_DEFAULT_STATUS or baseStatus == "UTAC_GENERAL" then
+            add(key)
+        end
+    end
+
     return candidates
 end
 
@@ -2307,9 +2375,59 @@ local function ScheduleAutoSummonRetry(candidate, reason)
 end
 
 local function ScanKnownSummonCandidates(reason, seed)
+    local count = 0
     for _, candidate in ipairs(GetKnownSummonCandidates(seed)) do
         ScheduleAutoSummonRetry(candidate, reason)
+        count = count + 1
     end
+    return count
+end
+
+_G.UTAC_RuntimeSummonReloadRecovery = _G.UTAC_RuntimeSummonReloadRecovery or {
+    queued = false,
+    token = 0,
+    reason = nil,
+}
+
+function _G.UTAC_ScheduleSummonReloadRecovery(reason)
+    if not (Ext and Ext.Timer and type(Ext.Timer.WaitFor) == "function") then
+        ScanKnownSummonCandidates(reason or "summon reload recovery immediate")
+        return
+    end
+    local state = _G.UTAC_RuntimeSummonReloadRecovery
+    state.token = state.token + 1
+    state.reason = reason or "summon reload recovery"
+    if state.queued then
+        InfoPrint("Summon reload recovery already queued; coalesced reason=" .. tostring(state.reason))
+        return
+    end
+
+    state.queued = true
+    local token = state.token
+    InfoPrint("Summon reload recovery queued: reason=" .. tostring(state.reason))
+    Ext.Timer.WaitFor(750, function()
+        local latestState = _G.UTAC_RuntimeSummonReloadRecovery
+        if token ~= latestState.token then
+            latestState.queued = false
+            _G.UTAC_ScheduleSummonReloadRecovery(latestState.reason or reason)
+            return
+        end
+        latestState.queued = false
+        if not IsModEnabled() or not UTACSettings.GetBool("MCM_AutoApplySummons", true) then
+            return
+        end
+        local firstReason = tostring(latestState.reason or reason or "summon reload recovery")
+        local firstCount = ScanKnownSummonCandidates(firstReason .. " settled")
+        InfoPrint(string.format("Summon reload recovery scan completed: candidates=%d reason=%s", firstCount, firstReason))
+
+        Ext.Timer.WaitFor(1750, function()
+            if not IsModEnabled() or not UTACSettings.GetBool("MCM_AutoApplySummons", true) then
+                return
+            end
+            local secondCount = ScanKnownSummonCandidates(firstReason .. " late")
+            InfoPrint(string.format("Summon reload recovery late scan completed: candidates=%d reason=%s", secondCount, firstReason))
+        end)
+    end)
 end
 
 local function CollectKnownUTACCharacters(includeCombatCache)
@@ -3462,7 +3580,6 @@ UTACSpellPolicy.Initialize({
 
 UTACSettings.Initialize({ source = "module_load" })
 RefreshTrackedSpellResources()
-ResyncAutoSummonExclusions("module_load")
 UTACSpellPolicyRefreshRuntime.Schedule("module_load", true)
 InfoPrint("SCRIPT LOADED. Build=" .. BUILD_TAG)
 
@@ -3472,9 +3589,10 @@ if Ext.Events and Ext.Events.StatsLoaded then
     end)
 end
 
-Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(_, _)
+_G.UTAC_RegisterOsirisListener("LevelGameplayStarted", 2, "after", function(_, _)
     UTACSettings.RefreshFromMCM({ source = "LevelGameplayStarted" })
     ResyncAutoSummonExclusions("LevelGameplayStarted")
+    _G.UTAC_ScheduleSummonReloadRecovery("LevelGameplayStarted")
     UTACSpellPolicyRefreshRuntime.Schedule("LevelGameplayStarted", true)
     if not IsModEnabled() then
         return
@@ -3486,7 +3604,7 @@ end)
 -- ||                        EVENT LISTENERS                                      ||
 -- =================================================================================
 
-Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(character, status, causee, _)
+_G.UTAC_RegisterOsirisListener("StatusApplied", 4, "after", function(character, status, causee, _)
     if not IsModEnabled() then return end
     UTACSpellPolicy.OnStatusApplied(character, status, causee)
     local key = RememberCharacterHandle(character)
@@ -3566,7 +3684,7 @@ Ext.Osiris.RegisterListener("StatusApplied", 4, "after", function(character, sta
     end
 end)
 
-Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(character, status, _, _)
+_G.UTAC_RegisterOsirisListener("StatusRemoved", 4, "after", function(character, status, _, _)
     if not IsModEnabled() then return end
     local key = RememberCharacterHandle(character)
     if not key then return end
@@ -3634,7 +3752,7 @@ Ext.Osiris.RegisterListener("StatusRemoved", 4, "after", function(character, sta
     end
 end)
 
-Ext.Osiris.RegisterListener("CharacterMadePlayer", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("CharacterMadePlayer", 1, "after", function(character)
     local key = RememberCharacterHandle(character)
     if not key then return end
     if RuntimeNPCRestorePending[key] then
@@ -3647,7 +3765,7 @@ Ext.Osiris.RegisterListener("CharacterMadePlayer", 1, "after", function(characte
     end
 end)
 
-Ext.Osiris.RegisterListener("CharacterJoinedParty", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("CharacterJoinedParty", 1, "after", function(character)
     local key = RememberCharacterHandle(character)
     if not key then return end
     if RuntimeNPCRestorePending[key] then
@@ -3657,14 +3775,14 @@ Ext.Osiris.RegisterListener("CharacterJoinedParty", 1, "after", function(charact
     ScheduleAutoSummonRetry(character, "CharacterJoinedParty")
 end)
 
-Ext.Osiris.RegisterListener("CharacterLeftParty", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("CharacterLeftParty", 1, "after", function(character)
     local key = RememberCharacterHandle(character)
     if key and _G.UTAC_Companions and _G.UTAC_Companions[key] then
         InfoPrint("Tracked UTAC character left party: " .. tostring(key))
     end
 end)
 
-Ext.Osiris.RegisterListener("EnteredCombat", 2, "after", function(character, combatGuid)
+_G.UTAC_RegisterOsirisListener("EnteredCombat", 2, "after", function(character, combatGuid)
     if not IsModEnabled() then return end
 
     if Osi.IsSpeakerReserved(character) == 1 then
@@ -3689,32 +3807,37 @@ Ext.Osiris.RegisterListener("EnteredCombat", 2, "after", function(character, com
     end
 end)
 
-Ext.Osiris.RegisterListener("DB_PlayerSummons", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("DB_PlayerSummons", 1, "after", function(character)
     if not IsModEnabled() then return end
     ScheduleAutoSummonRetry(character, "DB_PlayerSummons")
 end)
 
-Ext.Osiris.RegisterListener("DB_PartyFollowers", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("DB_PartyFollowers", 1, "after", function(character)
     if not IsModEnabled() then return end
     ScheduleAutoSummonRetry(character, "DB_PartyFollowers")
 end)
 
-Ext.Osiris.RegisterListener("CombatStarted", 1, "after", function(combatGuid)
+_G.UTAC_RegisterOsirisListener("CombatStarted", 1, "after", function(combatGuid)
     if not IsModEnabled() then return end
     ScanKnownSummonCandidates("CombatStarted " .. tostring(combatGuid))
 end)
 
-Ext.Osiris.RegisterListener("CombatEnded", 1, "after", function(combatGuid)
+_G.UTAC_RegisterOsirisListener("CombatEnded", 1, "after", function(combatGuid)
     for key, trackedCombat in pairs(RuntimeAutoSummonCombat) do
         if trackedCombat == true or trackedCombat == combatGuid then
             RuntimeAutoSummonCombat[key] = nil
+        end
+    end
+    if _G.UTAC_Companions then
+        for key, _ in pairs(_G.UTAC_Companions) do
+            UTAC_ModifySpells(RuntimeCharacterByKey[key] or key, false)
         end
     end
     UTACSpellPolicy.RestoreTurnScopedCanNotUse("CombatEnded " .. tostring(combatGuid))
     UTACSpellPolicy.ClearNonCombat("CombatEnded " .. tostring(combatGuid))
 end)
 
-Ext.Osiris.RegisterListener("LeftCombat", 2, "after", function(character, _)
+_G.UTAC_RegisterOsirisListener("LeftCombat", 2, "after", function(character, _)
     if not IsModEnabled() then return end
 
     local key = RememberCharacterHandle(character)
@@ -3723,6 +3846,7 @@ Ext.Osiris.RegisterListener("LeftCombat", 2, "after", function(character, _)
         return
     end
     RuntimeAutoSummonCombat[key] = nil
+    UTAC_ModifySpells(character, false)
     UTACSpellPolicy.ClearForCharacter(key, "LeftCombat")
     SyncCombatBlockStatuses(key)
 
@@ -3749,7 +3873,7 @@ Ext.Osiris.RegisterListener("LeftCombat", 2, "after", function(character, _)
     end
 end)
 
-Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("TurnStarted", 1, "after", function(character)
     if not IsModEnabled() then return end
     local cKey = RememberCharacterHandle(character)
     UTACSpellPolicy.RestoreTurnScopedCanNotUseForDifferentOwner(character, "TurnStarted")
@@ -3804,6 +3928,7 @@ Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(character)
         Osi.ApplyStatus(character, "UTAC_ALLY", -1, 1)
     end
     SyncSculptSpellsHelperForCharacter(character, GetMCM_Bool("MCM_EnableSculptSpellsHelper", false))
+    UTAC_ModifySpells(character, true)
 
     if GetMCM_Bool("MCM_DisableUTACDash", false) then
         Osi.ApplyStatus(character, "UTAC_DASHING_DISABLED", -1, 1)
@@ -3965,26 +4090,26 @@ Ext.Osiris.RegisterListener("TurnStarted", 1, "after", function(character)
     end
 end)
 
-Ext.Osiris.RegisterListener("TurnEnded", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("TurnEnded", 1, "after", function(character)
     UTACSpellPolicy.RestoreTurnScopedCanNotUseIfOwner(character, "TurnEnded")
 end)
 
 local RALLY_MAX_DISTANCE = nil
 
-Ext.Osiris.RegisterListener("UsingSpell", 5, "before", function(caster, spellId, _, _, _)
+_G.UTAC_RegisterOsirisListener("UsingSpell", 5, "before", function(caster, spellId, _, _, _)
     if not IsModEnabled() then return end
     LogThrowSpellDiagnostic(caster, spellId)
     UTACSpellPolicy.ObserveSpell(caster, spellId, "UsingSpell before")
     UTACSpellPolicy.OnUsingSpell(caster, spellId)
 end)
 
-Ext.Osiris.RegisterListener("UsingSpell", 5, "after", function(caster, spellId, _, _, _)
+_G.UTAC_RegisterOsirisListener("UsingSpell", 5, "after", function(caster, spellId, _, _, _)
     if not IsModEnabled() then return end
     UTACSpellPolicy.OnUsingSpellAfter(caster, spellId)
     UTACSpellPolicy.ObserveSpell(caster, spellId, "UsingSpell after")
 end)
 
-Ext.Osiris.RegisterListener("UsingSpellAtPosition", 8, "after", function(caster, x, y, z, spell, _, _, _)
+_G.UTAC_RegisterOsirisListener("UsingSpellAtPosition", 8, "after", function(caster, x, y, z, spell, _, _, _)
     if not IsModEnabled() then return end
     UTACSpellPolicy.ObserveSpell(caster, spell, "UsingSpellAtPosition after", string.format("pos=%s,%s,%s", tostring(x), tostring(y), tostring(z)))
     if spell ~= "Shout_UTAC_Rally" then return end
@@ -4015,7 +4140,7 @@ Ext.Osiris.RegisterListener("UsingSpellAtPosition", 8, "after", function(caster,
     end
 end)
 
-Ext.Osiris.RegisterListener("UsingSpellOnTarget", 6, "after", function(caster, target, spell, _, _, _)
+_G.UTAC_RegisterOsirisListener("UsingSpellOnTarget", 6, "after", function(caster, target, spell, _, _, _)
     if not IsModEnabled() then return end
     UTACSpellPolicy.ObserveSpell(caster, spell, "UsingSpellOnTarget after", "target=" .. tostring(target))
 
@@ -4090,12 +4215,12 @@ end)
 -- ||                        DIALOGUE HANDLING                                    ||
 -- =================================================================================
 
-Ext.Osiris.RegisterListener("DialogStarted", 2, "after", function(dialog, instanceID)
+_G.UTAC_RegisterOsirisListener("DialogStarted", 2, "after", function(dialog, instanceID)
     if not IsModEnabled() then return end
     _G.UTAC_TransformedForDialog = {}
 end)
 
-Ext.Osiris.RegisterListener("DialogActorJoined", 4, "after", function(dialog, instanceID, actor, speakerIndex)
+_G.UTAC_RegisterOsirisListener("DialogActorJoined", 4, "after", function(dialog, instanceID, actor, speakerIndex)
     if not IsModEnabled() then return end
     local actorKey = CC_Normalize(actor)
 
@@ -4134,7 +4259,7 @@ Ext.Osiris.RegisterListener("DialogActorJoined", 4, "after", function(dialog, in
     end
 end)
 
-Ext.Osiris.RegisterListener("DialogEnded", 2, "after", function(dialog, instanceID)
+_G.UTAC_RegisterOsirisListener("DialogEnded", 2, "after", function(dialog, instanceID)
     if not IsModEnabled() then return end
     for actorUUID, dialogData in pairs(_G.UTAC_TransformedForDialog) do
         if dialogData and Osi.Exists(actorUUID) == 1 then
@@ -4150,13 +4275,24 @@ Ext.Osiris.RegisterListener("DialogEnded", 2, "after", function(dialog, instance
     _G.UTAC_TransformedForDialog = {}
 end)
 
-Ext.Osiris.RegisterListener("ShortRested", 1, "after", function(character)
+_G.UTAC_RegisterOsirisListener("ShortRested", 1, "after", function(character)
     if not IsModEnabled() then return end
     ReinforceUTACControl()
     ApplyCurrentStatefulSettingsToTrackedCharacters()
 end)
 
 Ext.Events.SessionLoaded:Subscribe(function()
+    if type(_G.UTAC_FlushOsirisListeners) == "function" then
+        _G.UTAC_FlushOsirisListeners("SessionLoaded")
+    end
+    if type(_G.UTAC_ApplyHostSpellPolicy) == "function" then
+        pcall(_G.UTAC_ApplyHostSpellPolicy)
+        if Ext and Ext.Timer and type(Ext.Timer.WaitFor) == "function" then
+            Ext.Timer.WaitFor(500, function()
+                pcall(_G.UTAC_ApplyHostSpellPolicy)
+            end)
+        end
+    end
     MigratePersistentVarsSnapshot()
     UTACSettings.RefreshFromMCM({ source = "SessionLoaded" })
     UTACSpellPolicyRefreshRuntime.Schedule("SessionLoaded", true)
@@ -4166,4 +4302,5 @@ Ext.Events.SessionLoaded:Subscribe(function()
     end
     RefreshTrackedSpellResources()
     RebuildAndReinforceAfterLoad(1)
+    _G.UTAC_ScheduleSummonReloadRecovery("SessionLoaded")
 end)

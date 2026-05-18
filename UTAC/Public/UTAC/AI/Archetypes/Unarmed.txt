@@ -1,0 +1,60 @@
+USING base
+
+// Early unarmed/monk profile: mobile melee pressure without weapon pickup.
+MULTIPLIER_DAMAGE_ENEMY_POS                  2.4
+MULTIPLIER_KILL_ENEMY                        1.8
+MULTIPLIER_ENDPOS_ENEMIES_NEARBY             0.6
+
+// Mobility and safe engagement.
+MULTIPLIER_ENEMY_HEIGHT_DIFFERENCE           0.25
+MULTIPLIER_ENDPOS_FLANKED                    0.2
+MULTIPLIER_ENDPOS_NOT_IN_DANGEROUS_SURFACE   0.7
+MULTIPLIER_FALLBACK_ENEMIES_NEARBY          -0.4
+MULTIPLIER_MOVEMENT_COST_MULTPLIER           2.0
+MULTIPLIER_POSITION_LEAVE                    0.8
+ENABLE_MOVEMENT_AVOID_AOO                    1.0
+
+// Avoid wasting unarmed builds on splash/control gimmicks.
+MULTIPLIER_DAMAGE_MULTI_TARGET_POS           1.0
+MULTIPLIER_AOE_DAMAGE_POS                    0.4
+MULTIPLIER_DAMAGE_ALLY_NEG                   8.0
+MULTIPLIER_DAMAGE_NEUTRAL_NEG                8.0
+MULTIPLIER_DAMAGE_SELF_NEG                   8.0
+MULTIPLIER_SCORE_ON_NEUTRAL                 -0.9
+MULTIPLIER_TARGET_MY_ENEMY                   1.4
+
+// Unarmed attack support; keys are vanilla-confirmed in base archetype data.
+MODIFIER_BOOST_ROLLBONUS_MELEEUNARMEDATTACK  0.06
+MODIFIER_BOOST_ROLLBONUS_RANGEDUNARMEDATTACK 0.03
+MULTIPLIER_FIRST_ACTION_BUFF                 1.5
+MULTIPLIER_BONUS_WEAPON_BOOST                0.2
+MULTIPLIER_BOOST_ENEMY_POS                   0.8
+MULTIPLIER_CONTROL_ENEMY_POS                 0.6
+MULTIPLIER_DOT_ENEMY_POS                     0.7
+
+BOOST_IGNORE_AOO_MIN_MOVEMENT                2.0
+MULTIPLIER_BOOST_IGNORE_AOO                  0.05
+MULTIPLIER_DOT_ALLY_NEG                      4.0
+MULTIPLIER_DOT_NEUTRAL_NEG                   4.0
+MULTIPLIER_CONTROL_ALLY_NEG                  6.0
+MULTIPLIER_CONTROL_NEUTRAL_POS               0.0
+MULTIPLIER_CONTROL_NEUTRAL_NEG               6.0
+
+WEAPON_PICKUP_MODIFIER                       0.0
+MODIFIER_CONCENTRATION_REMOVE_SELF           10.0
+MODIFIER_SEEK_MINIMAL_THRESHOLD              0.45
+
+MULTIPLIER_TARGET_PREFERRED                  25.0
+MULTIPLIER_TARGET_UNPREFERRED                0.05
+MULTIPLIER_TARGET_INCAPACITATED              1.5
+MULTIPLIER_BLIND                             0.25
+MULTIPLIER_USABLE_ITEM                       0.25
+MULTIPLIER_ENDPOS_TURNED_INVISIBLE           0.3
+
+// Discourage shoving (AI wastes actions shoving dead bodies).
+MULTIPLIER_SHOVE_ENEMY_POS                   0.0
+
+// --- SMART AI ENHANCEMENTS ---
+MODIFIER_HIT_CHANCE_STUPIDITY                0.0
+MODIFIER_CONCENTRATION_REMOVE_TARGET         0.3
+MULTIPLIER_FALL_DAMAGE_ENEMY                 0.2

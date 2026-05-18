@@ -6,33 +6,22 @@ All notable changes to Ultimate Tactical AI Companions (UTAC) are recorded here.
 
 ## [Unreleased]
 
-### Fixed
-- Reworked UTAC Spell Policy's primary blocker to use turn-scoped `AIFlags=CanNotUse` on the currently active UTAC-controlled actor's resolved blocked spell list.
-- Added owner-aware stale `TurnEnded` protection so a late previous actor `TurnEnded` does not immediately restore blocked spells during the next UTAC actor's turn.
-- Added `utac_spell_policy_ai_flags <SpellId>` diagnostics for current AI flags, temporary tracking state, original `CanNotUse` state, and active turn owner.
-- Reduced Spell Policy startup refresh duplication and blocked-spell resolver log spam without changing gameplay behavior.
-- Fixed a load/reload ordering issue where Spell Policy could use a stale/default blocked-spell list until the list was manually saved in MCM.
-- Improved Spell Policy variant resolution so blocked vanilla spell IDs also catch loaded modded/override spell stats with the same spell tail, such as `Target_*_Sanctuary`.
-- Added a runtime fallback that can learn and patch an observed blocked-spell variant if it was missed during startup resolution.
-- Added the same turn-scoped `CanNotUse` safety layer to the existing optional Throw block, so `Throw_Throw` stays blocked even if another stats file overwrites UTAC's static throw gate.
-- Made Focus Target / Ignore Target orders much more decisive across all UTAC archetypes and fixed Bruiser missing preferred/ignored target scoring.
-- Made Focus Target / Ignore Target markers combat-long so they do not expire before the ordered AI actor gets a turn.
+No unreleased public changes yet.
 
-### Notes
-- Spellbook/hotbar visibility is not the blocker target. Prepared/class spells can still appear in UI; the runtime block prevents native AI from selecting blocked spells during the active UTAC actor's turn.
-- RequirementConditions patching, spell removal, queue purge, and post-leak cleanup remain fallback layers, but turn-scoped `CanNotUse` is now the primary enforcement path.
-
-### Planning
-- Planned a later optional strict role-helper prototype, excluding Healer in the first pass.
-- Updated role-helper planning: Spellcaster is treated as spell-first/safe-distance, not strictly ranged single-target; Bladesinger-style hybrids should generally use Skirmisher, Assassin, or General/Balanced.
+## [1.1.3.0] - 2026-05-18
 
 ### Added
-- Implemented `1.0.4` as an MCM localization-only patch: all current MCM tabs, sections, setting names, and setting descriptions now have localization handles with English XML entries.
-- Added translator-facing notes for external translation patches.
+- Added three new early/test archetypes: Unarmed, Primal Druid, and Summoner/Conjurer.
+- Added conservative AI helper spells for Action Surge, Cunning Action Dash, and Primal Druid Wild Shape Combat.
+- Helper spells only appear for valid UTAC-controlled actors that already have the real ability, and are cleaned up after combat/release.
+- Added summon reload recovery scans to help auto-controlled summons recover after save/quit/reload.
 
-### Documentation
-- Added combined implementation plan for MCM localization, Sculpt Spells, and strict role helpers.
-- Added private roadmap tracking for shipped work, upcoming releases, and deferred compatibility items.
+### Changed
+- Slightly improved Assassin and Skirmisher opportunity-attack avoidance tuning.
+
+### Notes
+- The new archetypes are early and need more testing.
+- Summoner supports existing summons/control behavior, but does not force summon spell casting yet.
 
 ## [1.1.2.6] - 2026-05-14
 

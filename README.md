@@ -51,7 +51,7 @@ Download the latest packaged file from Nexus Mods and replace the old version th
 - Use Manual Focus Target and Ignore Target orders for priority decisions.
 - Configure optional helpers, action blocks, spell policy, and summon exclusions in BG3MCM.
 
-Main AI archetypes: Bruiser, Skirmisher, Assassin, Marksman, Protector, Healer, AoE Specialist, Spellcaster, and General AI.
+Main AI archetypes: Bruiser, Skirmisher, Assassin, Marksman, Protector, Healer, AoE Specialist, Spellcaster, General AI, Unarmed, Primal Druid, and Summoner.
 
 ## Important Notes
 
@@ -99,7 +99,7 @@ Package archives, build outputs, logs, and internal planning notes are intention
 - Short name: `UTAC`
 - Module folder: `UTAC`
 - Module UUID: `300fb883-8af8-4be9-a101-171b56698dc5`
-- Version: `1.1.2.6`
+- Version: `1.1.3.0`
 
 ## License
 

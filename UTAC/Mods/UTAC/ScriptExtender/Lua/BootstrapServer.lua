@@ -135,11 +135,43 @@ local function IsEditorMode(enabled)
     return enabled == true or enabled == 1 or tostring(enabled) == "1" or tostring(enabled) == "true"
 end
 
+_G.UTAC_OsirisListenerQueue = _G.UTAC_OsirisListenerQueue or {
+    listeners = {},
+    registered = false,
+}
+
+function _G.UTAC_RegisterOsirisListener(eventName, arity, timing, callback)
+    local queue = _G.UTAC_OsirisListenerQueue
+    if queue and queue.registered then
+        Ext.Osiris.RegisterListener(eventName, arity, timing, callback)
+        return
+    end
+    table.insert(queue.listeners, {
+        eventName = eventName,
+        arity = arity,
+        timing = timing,
+        callback = callback,
+    })
+end
+
+function _G.UTAC_FlushOsirisListeners(reason)
+    local queue = _G.UTAC_OsirisListenerQueue
+    if not queue or queue.registered then
+        return
+    end
+    queue.registered = true
+    for _, listener in ipairs(queue.listeners) do
+        Ext.Osiris.RegisterListener(listener.eventName, listener.arity, listener.timing, listener.callback)
+    end
+    queue.listeners = {}
+    Log("Registered deferred Osiris listeners (" .. tostring(reason or "unknown") .. ")")
+end
+
 -- Register ModVars at startup so prototypes exist before loading saves.
 Ext.Vars.RegisterModVariable(MODULE_UUID, "DisabledAssignmentSnapshot", { Server = true, Client = true, SyncToClient = true })
 Ext.Vars.RegisterModVariable(MODULE_UUID, "DisabledAssignmentSnapshotActive", { Server = true, Client = true, SyncToClient = true })
 
-Ext.Osiris.RegisterListener("LevelGameplayStarted", 2, "after", function(_, isEditorMode)
+_G.UTAC_RegisterOsirisListener("LevelGameplayStarted", 2, "after", function(_, isEditorMode)
     if IsEditorMode(isEditorMode) then
         return
     end

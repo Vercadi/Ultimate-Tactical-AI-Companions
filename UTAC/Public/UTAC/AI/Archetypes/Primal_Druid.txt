@@ -1,0 +1,62 @@
+USING base
+
+// Early druid caster profile: support/control with conservative area pressure.
+MULTIPLIER_DAMAGE_ENEMY_POS                  1.8
+MULTIPLIER_KILL_ENEMY                        0.8
+
+// Safer caster positioning.
+MULTIPLIER_ENDPOS_ENEMIES_NEARBY            -0.8
+ENDPOS_ENEMIES_NEARBY_MAX_DISTANCE          10.0
+MULTIPLIER_ENEMY_HEIGHT_DIFFERENCE           0.25
+MULTIPLIER_ENDPOS_NOT_IN_DANGEROUS_SURFACE   0.8
+MULTIPLIER_ENDPOS_ALLIES_NEARBY              0.3
+MULTIPLIER_FALLBACK_ENEMIES_NEARBY          -0.35
+
+// Nature/control caster, less explosive than AoE Specialist.
+MULTIPLIER_DAMAGE_MULTI_TARGET_POS           1.5
+MULTIPLIER_AOE_DAMAGE_POS                    1.1
+MULTIPLIER_DAMAGE_ALLY_NEG                   10.0
+MULTIPLIER_DAMAGE_NEUTRAL_NEG                10.0
+MULTIPLIER_DAMAGE_SELF_NEG                   15.0
+MULTIPLIER_BOOST_ALLY_POS                    1.0
+MULTIPLIER_BOOST_SELF_POS                    0.7
+MULTIPLIER_BOOST_ENEMY_POS                   1.0
+MULTIPLIER_DOT_ENEMY_POS                     1.5
+MULTIPLIER_DOT_NEUTRAL_NEG                   8.0
+MULTIPLIER_CONTROL_ENEMY_POS                 1.5
+MULTIPLIER_CONTROL_NEUTRAL_POS               0.0
+MULTIPLIER_CONTROL_NEUTRAL_NEG               8.0
+MULTIPLIER_IMMUNITY_STUPIDITY                0.0
+
+// Preserve concentration more than the generic caster profile.
+MULTIPLIER_FIRST_ACTION_BUFF                 1.4
+MULTIPLIER_PLANNED_ACTION_WITH_MOVE_SPELL    1.0
+MODIFIER_BOOST_ROLLBONUS_SAVINGTHROW         0.03
+MODIFIER_CONCENTRATION_REMOVE_SELF           12.0
+MODIFIER_CONCENTRATION_REMOVE_TARGET         0.2
+
+BOOST_IGNORE_AOO_MIN_MOVEMENT                2.0
+MULTIPLIER_BOOST_IGNORE_AOO                  0.02
+
+WEAPON_PICKUP_MODIFIER                       0.0
+MULTIPLIER_TARGET_MY_ENEMY                   1.2
+MODIFIER_SEEK_MINIMAL_THRESHOLD              0.45
+
+MULTIPLIER_TARGET_PREFERRED                  25.0
+MULTIPLIER_TARGET_UNPREFERRED                0.05
+MULTIPLIER_HEAL_ALLY_POS                     1.0
+MULTIPLIER_HEAL_SELF_POS                     0.8
+MULTIPLIER_RESURRECT                         3.0
+
+MULTIPLIER_BLIND                             0.4
+MULTIPLIER_INCAPACITATE                      1.1
+MULTIPLIER_USABLE_ITEM                       0.2
+MULTIPLIER_REFLECT_DAMAGE                    0.1
+MULTIPLIER_SCORE_ON_NEUTRAL                 -1.0
+
+// Discourage shoving (AI wastes actions shoving dead bodies).
+MULTIPLIER_SHOVE_ENEMY_POS                   0.0
+
+// --- SMART AI ENHANCEMENTS ---
+MODIFIER_HIT_CHANCE_STUPIDITY                0.0
+MULTIPLIER_FALL_DAMAGE_ENEMY                 0.25
